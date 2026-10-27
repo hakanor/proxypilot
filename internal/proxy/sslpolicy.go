@@ -63,7 +63,7 @@ func (p *SSLPolicy) Snapshot() PolicySnapshot {
 	for k, v := range p.learned {
 		l[k] = v
 	}
-	return PolicySnapshot{Mode: p.mode, Allowlist: append([]string(nil), p.allow...), Denylist: append([]string(nil), p.deny...), Learned: l}
+	return PolicySnapshot{Mode: p.mode, Allowlist: append([]string{}, p.allow...), Denylist: append([]string{}, p.deny...), Learned: l}
 }
 
 // ShouldIntercept takes "host:port" (or a bare host).
@@ -94,6 +94,14 @@ func (p *SSLPolicy) LearnTunnel(hostport, reason string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.learned[host] = reason
+}
+
+// ForgetTunnel lets host be intercepted again (it is re-learned if it keeps rejecting).
+func (p *SSLPolicy) ForgetTunnel(host string) {
+	host, _ = splitHostPortLower(host)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.learned, host)
 }
 
 // AddDeny appends a pattern to the denylist (e.g. after repeated client_tls_rejected).

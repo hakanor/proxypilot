@@ -36,9 +36,10 @@
     onimport: (file: File) => void;
     visibleCount: number;
     onssl: (mode: SSLPolicy['mode']) => void;
+    onssllist: () => void;
     ontheme: () => void;
   }
-  let { status, ssl, theme, onrecord, onclear, clearing = false, sysProxy, ontogglesysproxy, ontogglenocaching, onexport, onimport, visibleCount, onssl, ontheme }: Props =
+  let { status, ssl, theme, onrecord, onclear, clearing = false, sysProxy, ontogglesysproxy, ontogglenocaching, onexport, onimport, visibleCount, onssl, onssllist, ontheme }: Props =
     $props();
 
   let secrets = $state(false);
@@ -237,6 +238,7 @@
             <DropdownMenu.RadioItem value={m}>{t(`toolbar.sslModes.${m}`)}</DropdownMenu.RadioItem>
           {/each}
         </DropdownMenu.RadioGroup>
+        <DropdownMenu.Item onSelect={onssllist}>{t('toolbar.sslList')}</DropdownMenu.Item>
       {/if}
       <DropdownMenu.Separator />
       <DropdownMenu.Item onSelect={ontheme}>{theme === 'dark' ? t('toolbar.themeLight') : t('toolbar.themeDark')}</DropdownMenu.Item>

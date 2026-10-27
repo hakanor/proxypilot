@@ -39,6 +39,7 @@ type Deps struct {
 	Bus         *events.Bus
 	CA          *ca.RootCA
 	Policy      *proxy.SSLPolicy
+	SavePolicy  func(proxy.PolicySnapshot) // persists mode and lists (nil: not saved)
 	Token       string
 	Log         *slog.Logger
 	Status      func() StatusInfo    // live daemon status

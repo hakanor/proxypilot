@@ -32,6 +32,7 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/summary", s.handleSummary)
 	mux.HandleFunc("GET /api/v1/ssl-policy", s.handleGetPolicy)
 	mux.HandleFunc("PUT /api/v1/ssl-policy", s.handlePutPolicy)
+	mux.HandleFunc("DELETE /api/v1/ssl-policy/learned/{host}", s.handleForgetTunnel)
 	mux.HandleFunc("GET /api/v1/ca", s.handleCA)
 	mux.HandleFunc("GET /api/v1/ca/cert", s.handleCACert)
 	mux.HandleFunc("PUT /api/v1/recording", s.handlePutRecording)
@@ -388,6 +389,15 @@ func (s *Server) handlePutPolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.deps.Policy.Set(mode, u.Allowlist, u.Denylist)
+	snap := s.deps.Policy.Snapshot()
+	if s.deps.SavePolicy != nil {
+		s.deps.SavePolicy(snap)
+	}
+	writeJSON(w, http.StatusOK, snap)
+}
+
+func (s *Server) handleForgetTunnel(w http.ResponseWriter, r *http.Request) {
+	s.deps.Policy.ForgetTunnel(r.PathValue("host"))
 	writeJSON(w, http.StatusOK, s.deps.Policy.Snapshot())
 }
 

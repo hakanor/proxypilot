@@ -2,6 +2,27 @@
   "app": {
     "name": "ProxyPilot"
   },
+  "ssl": {
+    "title": "SSL list",
+    "body": "Mode: {mode}. Decrypted hosts show full requests; tunneled hosts show only the host, timing and size, and the app keeps working.",
+    "allowlist": {
+      "title": "Decrypt only these",
+      "hint": "Used in \"Allowlist only\" mode. *.example.com matches subdomains."
+    },
+    "denylist": {
+      "title": "Never decrypt",
+      "hint": "Always tunneled, in every mode. Use it for apps with SSL pinning."
+    },
+    "learned": {
+      "title": "Tunneled automatically",
+      "hint": "Hosts that rejected the ProxyPilot certificate 3 times. Cleared on restart.",
+      "keep": "Always tunnel",
+      "retry": "Try again"
+    },
+    "add": "Add",
+    "remove": "Remove {pattern}",
+    "empty": "None"
+  },
   "toolbar": {
     "record": "Record",
     "recording": "Recording",
@@ -18,6 +39,7 @@
       "allowlist": "Allowlist only",
       "off": "Tunnel all"
     },
+    "sslList": "SSL list…",
     "toggleTheme": "Toggle theme",
     "proxyUp": "Proxy listening on {addr}",
     "removeChip": "Remove filter {chip}",

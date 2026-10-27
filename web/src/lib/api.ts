@@ -118,6 +118,8 @@ export interface SSLPolicy {
   mode: 'all' | 'allowlist' | 'off';
   allowlist: string[];
   denylist: string[];
+  /** Hosts tunneled for this run: host → reason (pinning, mTLS). */
+  learned_tunnels?: Record<string, string>;
 }
 
 export interface Simulator {
@@ -484,6 +486,7 @@ export const api = {
   sslPolicy: () => call<SSLPolicy>('GET', '/ssl-policy'),
   setSSLPolicy: (p: SSLPolicy) =>
     call<SSLPolicy>('PUT', '/ssl-policy', { mode: p.mode, allowlist: p.allowlist, denylist: p.denylist }),
+  forgetTunnel: (host: string) => call<SSLPolicy>('DELETE', `/ssl-policy/learned/${encodeURIComponent(host)}`),
 };
 
 /** Same shape the stream sends, from a REST flow. */

@@ -106,7 +106,11 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	if err != nil {
 		return err
 	}
-	d.Policy = proxy.NewSSLPolicy(mode, cfg.SSL.Allowlist, cfg.SSL.Denylist)
+	if saved, ok := loadSSLPolicy(cfg.DataDir); ok {
+		d.Policy = proxy.NewSSLPolicy(saved.Mode, saved.Allowlist, saved.Denylist)
+	} else {
+		d.Policy = proxy.NewSSLPolicy(mode, cfg.SSL.Allowlist, cfg.SSL.Denylist)
+	}
 
 	if d.Store, err = store.Open(cfg.DataDir, store.Options{MaxEntries: cfg.Store.MaxEntries, MaxBytes: int64(cfg.Store.MaxDiskMB) << 20, InlineBodyLimit: int64(cfg.Store.InlineBodyLimit)}); err != nil {
 		return fmt.Errorf("store: %w", err)
@@ -133,7 +137,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	d.Chrome = &cdp.Manager{Store: d.Store, Bus: d.Bus, Rules: d.Rules, Log: log, DataDir: cfg.DataDir}
 	d.Repeater = &repeat.Repeater{Store: d.Store, Hooks: hooks, Bypass: proxy.Chain{d.Clients, rec}}
 	d.API = api.New(api.Deps{
-		Store: d.Store, Bus: d.Bus, CA: d.CA, Policy: d.Policy, Token: d.Token, Log: log,
+		Store: d.Store, Bus: d.Bus, CA: d.CA, Policy: d.Policy, SavePolicy: d.saveSSLPolicy, Token: d.Token, Log: log,
 		Status: d.status, Version: version.Version, Recorder: rec, Rules: d.Rules, Breakpoints: d.Breakpoints, Clients: d.Clients, Repeater: d.Repeater, Chrome: d.Chrome, DataDir: cfg.DataDir, Devices: devs, AppIcon: icons.PNG, NoCache: noCacheSwitch{d}, Throttle: throttleSwitch{d},
 		Redact: redact.New(cfg.Redact.Headers...),
 	}, api.Options{Addr: cfg.API.Listen, UnsafeRemote: opts.UnsafeRemoteAPI})

@@ -253,7 +253,7 @@ paths:
       responses:
         "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/SSLPolicy" } } } }
     put:
-      summary: Replace the SSL policy (runtime, not persisted)
+      summary: Replace the SSL policy (saved to <data-dir>/ssl-policy.json, which wins over config.yaml)
       requestBody:
         content:
           application/json:
@@ -261,6 +261,13 @@ paths:
       responses:
         "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/SSLPolicy" } } } }
         "400": { $ref: "#/components/responses/Error" }
+  /ssl-policy/learned/{host}:
+    delete:
+      summary: Forget an automatically tunneled host so it is decrypted again
+      parameters:
+        - { name: host, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/SSLPolicy" } } } }
   /ca:
     get:
       summary: Root CA information

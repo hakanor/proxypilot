@@ -208,6 +208,28 @@ func TestSSLPolicyEndpoint(t *testing.T) {
 	}
 }
 
+func TestSSLPolicyEmptyListsAreArrays(t *testing.T) {
+	e := newEnv(t)
+	r := e.do(t, "GET", "/api/v1/ssl-policy", nil, auth)
+	b, _ := io.ReadAll(r.Body)
+	if !strings.Contains(string(b), `"allowlist":[]`) {
+		t.Fatalf("empty allowlist must be [] for the UI, got %s", b)
+	}
+}
+
+func TestForgetLearnedTunnel(t *testing.T) {
+	e := newEnv(t)
+	e.srv.deps.Policy.LearnTunnel("pinned.example.com:443", "client rejected")
+	if e.srv.deps.Policy.ShouldIntercept("pinned.example.com:443") {
+		t.Fatal("learned host should be tunneled")
+	}
+	var p proxy.PolicySnapshot
+	decode(t, e.do(t, "DELETE", "/api/v1/ssl-policy/learned/pinned.example.com", nil, auth), &p)
+	if len(p.Learned) != 0 || !e.srv.deps.Policy.ShouldIntercept("pinned.example.com:443") {
+		t.Fatalf("host still tunneled: %+v", p)
+	}
+}
+
 func dialWS(t *testing.T, e *env) *websocket.Conn {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

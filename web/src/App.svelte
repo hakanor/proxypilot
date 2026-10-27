@@ -27,6 +27,7 @@
   import DocsPage from './pages/DocsPage.svelte';
   import UninstallPage from './pages/UninstallPage.svelte';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
+  import SSLListDialog from './components/SSLListDialog.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
 
   const store = (k: string, v?: string) => {
@@ -42,6 +43,7 @@
   const traffic = new Traffic();
   let status = $state<Status | null>(null);
   let ssl = $state<SSLPolicy | null>(null);
+  let sslListOpen = $state(false);
   let conn = $state<StreamState>({ kind: 'connecting' });
   let notice = $state<string | null>(null);
   let ruleVersion = $state(0);
@@ -424,6 +426,7 @@
     onimport={importFile}
     visibleCount={visible.length}
     onssl={setSSL}
+    onssllist={() => (sslListOpen = true)}
     ontheme={() => {
       theme = theme === 'dark' ? 'light' : 'dark';
       store('pp.theme', theme);
@@ -517,6 +520,9 @@
         <BreakpointsPage modal version={bpVersion} focusId={bpModal} onnotice={(m) => (notice = m)} onclose={() => (bpModal = null)} />
       </Dialog.Content>
     </Dialog.Root>
+  {/if}
+  {#if sslListOpen && ssl}
+    <SSLListDialog {ssl} onchange={(p) => (ssl = p)} onclose={() => (sslListOpen = false)} />
   {/if}
   {#if ruleModal}
     <Dialog.Root open onOpenChange={(o) => !o && (ruleModal = null)}>
