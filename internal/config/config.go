@@ -48,6 +48,7 @@ type APIConfig struct {
 
 type StoreConfig struct {
 	MaxEntries      int `yaml:"max_entries"`
+	MaxDiskMB       int `yaml:"max_disk_mb"` // bodies + WebSocket messages; 0 = unlimited
 	InlineBodyLimit int `yaml:"inline_body_limit"`
 }
 
@@ -75,7 +76,7 @@ func Defaults() Config {
 	return Config{
 		Proxy: ProxyConfig{Listen: "127.0.0.1:9090"},
 		API:   APIConfig{Listen: "127.0.0.1:9091"},
-		Store: StoreConfig{MaxEntries: 10000, InlineBodyLimit: 256 * 1024},
+		Store: StoreConfig{MaxEntries: 10000, MaxDiskMB: 1024, InlineBodyLimit: 256 * 1024},
 		SSL:   SSLConfig{Mode: "all", Denylist: append([]string(nil), DefaultDenylist...)},
 		Log:   LogConfig{Level: "info", Format: "text"},
 	}
@@ -138,6 +139,9 @@ func (c Config) Validate() error {
 	}
 	if c.Store.MaxEntries <= 0 {
 		return fmt.Errorf("store.max_entries must be > 0")
+	}
+	if c.Store.MaxDiskMB < 0 {
+		return fmt.Errorf("store.max_disk_mb must be >= 0 (0 = unlimited)")
 	}
 	if c.Store.InlineBodyLimit < 0 {
 		return fmt.Errorf("store.inline_body_limit must be >= 0")
@@ -204,6 +208,9 @@ func applyEnv(cfg *Config, env Env) error {
 	str("PROXYPILOT_LOG_FORMAT", &cfg.Log.Format)
 	str("PROXYPILOT_ADB", &cfg.Android.ADB)
 	if err := num("PROXYPILOT_STORE_MAX_ENTRIES", &cfg.Store.MaxEntries); err != nil {
+		return err
+	}
+	if err := num("PROXYPILOT_STORE_MAX_DISK_MB", &cfg.Store.MaxDiskMB); err != nil {
 		return err
 	}
 	return num("PROXYPILOT_STORE_INLINE_BODY_LIMIT", &cfg.Store.InlineBodyLimit)

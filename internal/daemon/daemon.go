@@ -108,7 +108,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	}
 	d.Policy = proxy.NewSSLPolicy(mode, cfg.SSL.Allowlist, cfg.SSL.Denylist)
 
-	if d.Store, err = store.Open(cfg.DataDir, store.Options{MaxEntries: cfg.Store.MaxEntries, InlineBodyLimit: int64(cfg.Store.InlineBodyLimit)}); err != nil {
+	if d.Store, err = store.Open(cfg.DataDir, store.Options{MaxEntries: cfg.Store.MaxEntries, MaxBytes: int64(cfg.Store.MaxDiskMB) << 20, InlineBodyLimit: int64(cfg.Store.InlineBodyLimit)}); err != nil {
 		return fmt.Errorf("store: %w", err)
 	}
 	defer d.Store.Close()

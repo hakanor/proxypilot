@@ -38,4 +38,10 @@ ProxyPilot sees and can change everything that goes through it. These are the pa
 
 ## Data on disk
 
-Captured traffic lives in `<data-dir>/proxypilot.db` and `<data-dir>/bodies/` (default `~/Library/Application Support/ProxyPilot`), including secrets in their original form. Clear it with the toolbar trash icon or `proxypilot clear`; retention keeps the newest `store.max_entries` flows (default 10 000).
+Captured traffic lives in `<data-dir>/proxypilot.db` and `<data-dir>/bodies/` (default `~/Library/Application Support/ProxyPilot`), including secrets in their original form. Clear it with the toolbar trash icon or `proxypilot clear`; retention keeps the newest `store.max_entries` flows (default 10 000) and at most `store.max_disk_mb` of bodies and WebSocket messages (default 1024 MB, `0` = unlimited), deleting the oldest first. Set them in `<data-dir>/config.yaml`:
+
+```yaml
+store:
+  max_entries: 10000
+  max_disk_mb: 1024
+```

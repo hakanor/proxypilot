@@ -254,6 +254,32 @@ func TestLargeBodyOnDiskAndRetention(t *testing.T) {
 	}
 }
 
+func TestRetentionByBytes(t *testing.T) {
+	s := openTest(t, Options{MaxEntries: 100, MaxBytes: 350, InlineBodyLimit: 16})
+	flows := seed(t, s, 8, func(i int) *Flow { return &Flow{Method: "GET", URL: "http://x/"} })
+	for _, f := range flows {
+		if _, err := s.PutBody(ctx, f.ID, SideResp, "", 100, bytesOpener(bytes.Repeat([]byte("z"), 100))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	n, err := s.EnforceRetention(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 5 {
+		t.Fatalf("removed %d, want 5 (3 × 100 B fit in 350 B)", n)
+	}
+	for i, f := range flows {
+		_, err := s.Get(ctx, f.ID)
+		if kept := err == nil; kept != (i >= 5) {
+			t.Fatalf("flow %d kept=%v", i, kept)
+		}
+	}
+	if n, _ := s.EnforceRetention(ctx); n != 0 {
+		t.Fatalf("second pass removed %d", n)
+	}
+}
+
 func TestMaxBodyTruncates(t *testing.T) {
 	s := openTest(t, Options{InlineBodyLimit: 8, MaxBodySize: 32})
 	f := &Flow{URL: "http://x/"}

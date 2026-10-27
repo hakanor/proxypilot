@@ -20,6 +20,7 @@ var ErrNotFound = errors.New("not found")
 
 type Options struct {
 	MaxEntries      int   // retention bound (default 10000)
+	MaxBytes        int64 // stored body + WebSocket bytes bound (0 = unlimited)
 	InlineBodyLimit int64 // bodies up to this size live in SQLite (default 256 KB)
 	MaxBodySize     int64 // decoded bodies are truncated beyond this (default 64 MB)
 }
