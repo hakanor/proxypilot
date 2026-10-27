@@ -1,0 +1,36 @@
+{
+  "title": "Install the ProxyPilot certificate",
+  "subtitle": "Lets ProxyPilot decrypt HTTPS traffic from this device. Only do this on a device you use for testing.",
+  "ios": "iPhone / iPad",
+  "android": "Android",
+  "other": "Other",
+  "downloadIos": "Download profile (.mobileconfig)",
+  "downloadAndroid": "Download certificate (.crt)",
+  "downloadOther": "Download certificate (.pem)",
+  "steps": "STEPS",
+  "checkProxy": "Device sends traffic through the proxy",
+  "checkProxyTodo": "Set this device's Wi-Fi proxy to {addr} (steps below)",
+  "checkTrust": "Certificate trusted",
+  "checkTrustTodo": "Certificate not trusted yet",
+  "checkTrustRejected": "{host} rejected the certificate: trust it, then retry",
+  "checkHttps": "HTTPS decryption working",
+  "proxyFirst": "First set the Wi-Fi proxy: Settings → Wi-Fi → (i) next to your network → Configure Proxy → Manual → Server {host}, Port {port}. Then open http://proxypilot.cert.",
+  "iosSteps": [
+    "Tap Download profile and choose Allow.",
+    "Open Settings → Profile Downloaded → Install, then enter your passcode.",
+    "Go to Settings → General → About → Certificate Trust Settings.",
+    "Turn on full trust for “{cn}”. This page updates when HTTPS works."
+  ],
+  "androidSteps": [
+    "Set the Wi-Fi proxy: Settings → Network → Wi-Fi → your network → Edit → Advanced → Proxy: Manual, host {host}, port {port}.",
+    "Tap Download certificate.",
+    "Open Settings → Security → Encryption & credentials → Install a certificate → CA certificate, and pick proxypilot-ca.crt.",
+    "Apps only trust user CAs in debug builds (network_security_config). Browsers work right away."
+  ],
+  "otherSteps": [
+    "Download the certificate and add it to the system or browser trust store as a root CA.",
+    "Point the device's HTTP and HTTPS proxy at {host}:{port}."
+  ],
+  "footer": "Fingerprint SHA-256 {fp}. Remove it from Settings when you finish testing.",
+  "done": "All set. Requests from this device appear in ProxyPilot."
+}

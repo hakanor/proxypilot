@@ -1,0 +1,86 @@
+# GoReleaser v2: `goreleaser release --clean` on a tag (CI); `goreleaser build --snapshot --clean` locally.
+# The web UI and the certificate-page guide are built first and embedded with go:embed.
+version: 2
+project_name: proxypilot
+
+before:
+  hooks:
+    - make web
+    - go mod tidy
+
+builds:
+  - id: proxypilot
+    main: ./cmd/proxypilot
+    binary: proxypilot
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    flags: [-trimpath]
+    ldflags:
+      - -s -w
+      - -X github.com/hakanor/proxypilot/internal/version.Version={{.Version}}
+      - -X github.com/hakanor/proxypilot/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/hakanor/proxypilot/internal/version.Date={{.Date}}
+
+universal_binaries:
+  - id: proxypilot-universal
+    ids: [proxypilot]
+    replace: false
+
+# macOS signing + notarization. Credentials come from CI secrets only:
+# MACOS_SIGN_P12 (base64), MACOS_SIGN_PASSWORD, MACOS_NOTARY_ISSUER_ID, MACOS_NOTARY_KEY_ID, MACOS_NOTARY_KEY (base64).
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      ids: [proxypilot, proxypilot-universal]
+      sign:
+        certificate: "{{.Env.MACOS_SIGN_P12}}"
+        password: "{{.Env.MACOS_SIGN_PASSWORD}}"
+      notarize:
+        issuer_id: "{{.Env.MACOS_NOTARY_ISSUER_ID}}"
+        key_id: "{{.Env.MACOS_NOTARY_KEY_ID}}"
+        key: "{{.Env.MACOS_NOTARY_KEY}}"
+        wait: true
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ if eq .Arch \"all\" }}universal{{ else }}{{ .Arch }}{{ end }}"
+    files: [README.md, docs/quickstart.md, docs/security.md] # add LICENSE once the project has one
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^chore:"]
+
+# brew install hakanor/tap/proxypilot  (tap repo: github.com/hakanor/homebrew-tap; token: HOMEBREW_TAP_TOKEN)
+brews:
+  - name: proxypilot
+    ids: [default]
+    repository:
+      owner: hakanor
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/hakanor/proxypilot
+    description: HTTP(S) and WebSocket debugging proxy with a web UI, a JSON CLI and an MCP server
+    # license: set once the project picks one
+    install: |
+      bin.install "proxypilot"
+    test: |
+      system "#{bin}/proxypilot", "version"
+    caveats: |
+      Start it and open the UI:
+        proxypilot ui
+      To see HTTPS on this Mac, trust the root certificate (asks for your password):
+        proxypilot trust

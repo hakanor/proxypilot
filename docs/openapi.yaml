@@ -1,0 +1,374 @@
+openapi: 3.0.3
+info:
+  title: ProxyPilot Control API
+  version: "1"
+  description: |
+    Local control API used by the web UI, CLI, MCP server and TUI.
+    Listens on 127.0.0.1 only. Authenticate with `Authorization: Bearer <token>`
+    (token file in the data directory) or, from the web UI, the HttpOnly cookie
+    set by `GET /?token=...`. Requests whose Host is not 127.0.0.1/localhost/[::1]
+    with the API port get 421; cross-origin requests get 403; CORS is disabled.
+servers:
+  - url: http://127.0.0.1:9091/api/v1
+security:
+  - bearer: []
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    redact:
+      name: redact
+      in: query
+      description: Mask Authorization/Cookie/Set-Cookie and secret-looking headers, query params and JSON keys. CLI and MCP send true.
+      schema: { type: boolean, default: false }
+  schemas:
+    WSMessage:
+      type: object
+      properties:
+        seq: { type: integer }
+        dir: { type: string, enum: [up, down], description: "up = client → server" }
+        at: { type: string, format: date-time }
+        opcode: { type: string, enum: [text, binary, close, ping, pong] }
+        size: { type: integer, description: payload size after permessage-deflate }
+        text: { type: string, description: UTF-8 payload (first 64 KB) }
+        base64: { type: string, description: non-text payload (first 64 KB) }
+        truncated: { type: boolean }
+    ThrottleInfo:
+      type: object
+      properties:
+        enabled: { type: boolean }
+        name: { type: string }
+        down_kbps: { type: integer }
+        up_kbps: { type: integer }
+        latency_ms: { type: integer }
+        hosts: { type: array, items: { type: string } }
+        profiles:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              down_kbps: { type: integer }
+              up_kbps: { type: integer }
+              latency_ms: { type: integer }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: not_found }
+            message: { type: string }
+    Header:
+      type: object
+      properties:
+        name: { type: string }
+        value: { type: string }
+    Timing:
+      type: object
+      properties:
+        dns_ms: { type: number }
+        connect_ms: { type: number }
+        tls_ms: { type: number }
+        ttfb_ms: { type: number }
+        total_ms: { type: number }
+        reused: { type: boolean }
+    Flow:
+      type: object
+      properties:
+        id: { type: string, description: ULID }
+        session_id: { type: string }
+        source: { type: string, enum: [proxy, cdp, composer, import] }
+        client_addr: { type: string }
+        client_label: { type: string }
+        method: { type: string }
+        scheme: { type: string }
+        host: { type: string }
+        port: { type: integer }
+        path: { type: string }
+        query: { type: string }
+        url: { type: string }
+        status: { type: integer }
+        req_content_type: { type: string }
+        resp_content_type: { type: string }
+        req_size: { type: integer, description: decoded request body bytes }
+        resp_size: { type: integer, description: decoded response body bytes }
+        bytes_up: { type: integer, description: bytes on the wire client → upstream }
+        bytes_down: { type: integer, description: bytes on the wire upstream → client }
+        protocol: { type: string }
+        state: { type: string, enum: [pending, completed, failed, tunneled, paused] }
+        error_kind:
+          type: string
+          enum: [client_tls_rejected, client_tls_error, upstream_tls_error, upstream_connect_error, timeout, client_aborted, proxy_loop, aborted]
+        error_msg: { type: string }
+        timing: { $ref: "#/components/schemas/Timing" }
+        tags: { type: object, additionalProperties: { type: string } }
+        matched_rules: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        req_headers: { type: array, items: { $ref: "#/components/schemas/Header" } }
+        resp_headers: { type: array, items: { $ref: "#/components/schemas/Header" } }
+    BodyInfo:
+      type: object
+      properties:
+        side: { type: string, enum: [req, resp] }
+        encoding: { type: string, description: original Content-Encoding }
+        raw_size: { type: integer }
+        decoded_size: { type: integer }
+        truncated: { type: boolean }
+        on_disk: { type: boolean }
+        decode_error: { type: string }
+    FlowPage:
+      type: object
+      properties:
+        flows: { type: array, items: { $ref: "#/components/schemas/Flow" } }
+        next_cursor: { type: string }
+        has_more: { type: boolean }
+        limit: { type: integer }
+    Body:
+      type: object
+      properties:
+        flow_id: { type: string }
+        side: { type: string }
+        size: { type: integer }
+        returned: { type: integer }
+        truncated: { type: boolean }
+        content_type: { type: string }
+        encoding: { type: string, enum: [utf8, base64] }
+        content_encoding: { type: string }
+        data: { type: string }
+    Status:
+      type: object
+      properties:
+        running: { type: boolean }
+        pid: { type: integer }
+        proxy_addr: { type: string }
+        api_addr: { type: string }
+        started_at: { type: string, format: date-time }
+        uptime_seconds: { type: integer }
+        flows: { type: integer }
+        active_rules: { type: integer }
+        pending_breakpoints: { type: integer }
+        ca_fingerprint: { type: string }
+        session: { type: string }
+        stream_subscribers: { type: integer }
+        version: { type: string }
+    SSLPolicy:
+      type: object
+      properties:
+        mode: { type: string, enum: [all, allowlist, off] }
+        allowlist: { type: array, items: { type: string } }
+        denylist: { type: array, items: { type: string } }
+        learned_tunnels: { type: object, additionalProperties: { type: string }, readOnly: true }
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+paths:
+  /status:
+    get:
+      summary: Daemon status
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Status" } } } }
+  /flows:
+    get:
+      summary: List flows, newest first (default limit 50, max 500)
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 500 } }
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: host, in: query, description: "exact or wildcard (*.example.com)", schema: { type: string } }
+        - { name: method, in: query, description: comma-separated, schema: { type: string } }
+        - { name: status, in: query, description: "2xx | 4xx,5xx | >=500 | 404 | 400-499", schema: { type: string } }
+        - { name: type, in: query, description: response content-type substring, schema: { type: string } }
+        - { name: source, in: query, schema: { type: string } }
+        - { name: state, in: query, schema: { type: string } }
+        - { name: has_error, in: query, schema: { type: boolean } }
+        - { name: q, in: query, description: URL text search, schema: { type: string } }
+        - { name: body, in: query, description: also search inline bodies for q, schema: { type: boolean } }
+        - { name: since, in: query, description: "duration ago (5m) or RFC 3339", schema: { type: string } }
+        - { name: until, in: query, schema: { type: string } }
+        - { name: session, in: query, schema: { type: string } }
+        - $ref: "#/components/parameters/redact"
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/FlowPage" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+    delete:
+      summary: Clear flows (current or given session) and start a new session
+      parameters:
+        - { name: session, in: query, schema: { type: string } }
+      responses:
+        "200": { description: OK }
+  /flows/{id}:
+    get:
+      summary: Flow detail with headers and body metadata (no body bytes)
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/redact"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Flow"
+                  - type: object
+                    properties:
+                      bodies:
+                        type: object
+                        properties:
+                          req: { $ref: "#/components/schemas/BodyInfo" }
+                          resp: { $ref: "#/components/schemas/BodyInfo" }
+        "404": { $ref: "#/components/responses/Error" }
+  /flows/{id}/body/{side}:
+    get:
+      summary: Decoded body, truncated to max bytes (raw=true streams the whole body)
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - { name: side, in: path, required: true, schema: { type: string, enum: [req, resp] } }
+        - { name: max, in: query, schema: { type: integer, default: 4096, maximum: 10485760 } }
+        - { name: raw, in: query, schema: { type: boolean, default: false } }
+        - $ref: "#/components/parameters/redact"
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Body" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /summary:
+    get:
+      summary: Aggregate statistics
+      parameters:
+        - { name: since, in: query, description: "duration ago (5m) or RFC 3339", schema: { type: string } }
+      responses:
+        "200": { description: OK }
+  /ssl-policy:
+    get:
+      summary: Current SSL interception policy
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/SSLPolicy" } } } }
+    put:
+      summary: Replace the SSL policy (runtime, not persisted)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SSLPolicy" }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/SSLPolicy" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+  /ca:
+    get:
+      summary: Root CA information
+      responses:
+        "200": { description: OK }
+  /ca/cert:
+    get:
+      summary: Download the CA certificate
+      parameters:
+        - { name: format, in: query, schema: { type: string, enum: [pem, der], default: pem } }
+      responses:
+        "200": { description: Certificate file }
+  /stream:
+    get:
+      summary: Live events over WebSocket
+      description: |
+        After connecting send
+        `{"type":"subscribe","events":["flow.*","breakpoint.*"],"filter":{"host":"*.example.com","status":">=400","method":"GET,POST"}}`.
+        The server replies `{"type":"subscribed"}` and then sends `{"type":"batch","events":[...]}`
+        at most every 100 ms or 200 events. Flow events carry a lightweight row; fetch detail via REST.
+        A client that falls behind receives `{"type":"dropped","count":N}` and should resync via REST.
+        Ping every 15 s, 30 s timeout. Event types: flow.started, flow.updated, flow.completed, flow.failed,
+        breakpoint.paused, breakpoint.resumed, rule.changed, device.connected, proxy.state, suggestion,
+        recording.changed, chrome.state, ws.message (WebSocket message metadata, no payload).
+      responses:
+        "101": { description: Switching protocols }
+  /stream/ndjson:
+    get:
+      summary: Live events as newline-delimited JSON (curl, `proxypilot tail`)
+      parameters:
+        - { name: events, in: query, description: "comma-separated patterns, e.g. flow.*", schema: { type: string } }
+        - { name: host, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: method, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Stream, content: { application/x-ndjson: {} } }
+  /flows/{id}/messages:
+    get:
+      summary: WebSocket messages of a flow (status 101), oldest first
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - { name: after, in: query, description: return messages with seq greater than this, schema: { type: integer, default: 0 } }
+        - { name: limit, in: query, schema: { type: integer, default: 500, maximum: 5000 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages: { type: array, items: { $ref: "#/components/schemas/WSMessage" } }
+                  next: { type: integer, description: "after= value for the next page" }
+                  total: { type: integer }
+  /throttle:
+    get:
+      summary: Network throttle settings and the available profiles
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ThrottleInfo" } } } }
+    put:
+      summary: Turn throttling on (preset or custom) or off; persisted
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+                name: { type: string, enum: [edge, 3g, lte, bad-wifi, custom] }
+                down_kbps: { type: integer, description: custom only }
+                up_kbps: { type: integer, description: custom only }
+                latency_ms: { type: integer, description: custom only }
+                hosts: { type: array, items: { type: string }, description: "only these hosts (*.example.com); empty = all" }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ThrottleInfo" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+  /no-caching:
+    put:
+      summary: Strip cache headers so every request reaches the server; persisted (status.no_caching)
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [enabled], properties: { enabled: { type: boolean } } }
+      responses:
+        "200": { description: OK }
+  /recording:
+    put:
+      summary: Pause or resume recording
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [recording], properties: { recording: { type: boolean } } }
+      responses:
+        "200": { description: OK }
+  /devices/lan:
+    put:
+      summary: Open the proxy port to devices on the network (or close it); persisted
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [enabled], properties: { enabled: { type: boolean } } }
+      responses:
+        "200": { description: The device setup info (proxy_addr, reachable, lan_fixed, ...) }
+  /rules:
+    description: Map Local, Map Remote, Rewrite and Breakpoint rules (GET, POST; /rules/{id} GET, PUT, DELETE; /rules/{id}/content GET, PUT for Map Local files)
+  /breakpoints:
+    description: Paused flows (GET; /breakpoints/{id} GET; resume, extend, take-over)
+  /flows/{id}/repeat:
+    description: Send a recorded request again, optionally edited
+  /compose:
+    description: Send a new request through the proxy

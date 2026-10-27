@@ -1,0 +1,6 @@
+/bin/
+/dist/
+/web/node_modules/
+.DS_Store
+*.test
+coverage.out

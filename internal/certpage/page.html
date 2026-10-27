@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>{{.T.title}}</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
+<style>
+:root{--bg:#121212;--panel:#181818;--border:#282828;--text:#e8e8e8;--muted:#a7a7a7;--faint:#6a6a6a;--accent:#1db954;--ok:#1ed760;--okbg:#18291e;--warn:#f59b23;--warnbg:#2e2416;--err:#f15e6c;--errbg:#2e1a1c;--seg:#1f1f1f;--segon:#2a2a2a;--num:#242424}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:480px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 20px max(22px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;min-height:100vh}
+header{display:flex;align-items:center;gap:10px}
+.logo{width:28px;height:28px;display:block}
+header strong{font-size:17px}
+.addr{margin-left:auto;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+h1{margin:4px 0 0;font-size:24px;font-weight:600;line-height:1.2}
+.sub{margin:0;color:var(--muted)}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:12px;background:var(--seg)}
+.seg button{min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:600}
+.seg button[aria-pressed=true]{background:var(--segon);color:var(--text)}
+.card{padding:12px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--border);display:flex;flex-direction:column;gap:9px}
+.check{display:flex;align-items:center;gap:10px;font-size:14px}
+.dot{flex-shrink:0;width:20px;height:20px;border-radius:50%;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--num);color:var(--faint)}
+.check.ok .dot{background:var(--okbg);color:var(--ok)}
+.check.warn .dot{background:var(--warnbg);color:var(--warn)}
+.check.err .dot{background:var(--errbg);color:var(--err)}
+.check.todo{color:var(--faint)}
+.download{min-height:48px;border-radius:12px;background:var(--accent);color:#0b0b0b;font-weight:600;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.note{margin:0;padding:10px 12px;border-radius:10px;background:var(--warnbg);color:var(--warn);font-size:14px}
+.done{margin:0;padding:10px 12px;border-radius:10px;background:var(--okbg);color:var(--ok);font-size:14px}
+.label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.05em}
+details summary{cursor:pointer;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:" ▸"}
+details[open] summary::after{content:" ▾"}
+details ol{margin-top:10px}
+#guide{padding:14px;border-radius:12px;background:var(--panel);border:1px solid var(--border)}
+ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+li{display:flex;gap:12px;align-items:flex-start}
+li span:first-child{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--num);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+li span:last-child{padding-top:2px}
+footer{margin-top:auto;padding-top:14px;border-top:1px solid var(--border);color:var(--faint);font-size:12px;word-break:break-all}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <header><img class="logo" src="/icon.svg" alt=""><strong>ProxyPilot</strong><span class="addr">{{.ProxyAddr}}</span></header>
+  <h1>{{.T.title}}</h1>
+  <p class="sub">{{.T.subtitle}}</p>
+
+  <div class="seg" role="group">
+    <button type="button" data-p="ios">{{.T.ios}}</button>
+    <button type="button" data-p="android">{{.T.android}}</button>
+    <button type="button" data-p="other">{{.T.other}}</button>
+  </div>
+
+  <div class="card" id="checks">
+    <div class="check" id="c-proxy"><span class="dot">·</span><span></span></div>
+    <div class="check" id="c-trust"><span class="dot">·</span><span></span></div>
+    <div class="check" id="c-https"><span class="dot">·</span><span>{{.T.checkHttps}}</span></div>
+  </div>
+  <p class="note" id="proxy-first" hidden>{{.ProxyFirst}}</p>
+  <p class="done" id="done" hidden>{{.T.done}}</p>
+
+  <a class="download" id="dl" href="/ca.mobileconfig" data-ios="/ca.mobileconfig" data-android="/ca.crt" data-other="/ca.pem"
+     data-ios-label="{{.T.downloadIos}}" data-android-label="{{.T.downloadAndroid}}" data-other-label="{{.T.downloadOther}}">{{.T.downloadIos}}</a>
+
+  <div id="guide" data-platform="{{.Platform}}" data-ip="{{.Host}}" data-port="{{.Port}}"></div>
+
+  <details id="steps" open>
+  <summary class="label">{{.T.steps}}</summary>
+  {{range $p, $steps := .Steps}}
+  <ol data-steps="{{$p}}" hidden>{{range $i, $s := $steps}}<li><span>{{inc $i}}</span><span>{{$s}}</span></li>{{end}}</ol>
+  {{end}}
+  </details>
+
+  <footer>{{.Footer}}</footer>
+</main>
+<script src="/guide.js"></script>
+<script>
+(function () {
+  var T = {{.JS}};
+  var platform = {{.Platform}};
+  function pick(p) {
+    platform = p;
+    document.querySelectorAll('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.p === p)); });
+    document.querySelectorAll('[data-steps]').forEach(function (o) { o.hidden = o.dataset.steps !== p; });
+    var dl = document.getElementById('dl');
+    dl.href = dl.dataset[p];
+    dl.textContent = dl.dataset[p + 'Label'];
+    // iPhone / Android get the animated walkthrough; the text steps fold away under it.
+    var guided = p !== 'other' && !!window.ppGuide;
+    document.getElementById('guide').hidden = !guided;
+    document.getElementById('steps').open = !guided;
+    if (guided) window.ppGuide.setPlatform(p);
+  }
+  document.querySelectorAll('.seg button').forEach(function (b) { b.onclick = function () { pick(b.dataset.p); }; });
+  pick(platform);
+
+  function set(id, state, text) {
+    var el = document.getElementById(id);
+    el.className = 'check ' + state;
+    el.querySelector('.dot').textContent = state === 'ok' ? '✓' : state === 'todo' ? '·' : '!';
+    if (text) el.querySelector('span:last-child').textContent = text;
+  }
+  function render(s) {
+    set('c-proxy', s.proxied ? 'ok' : 'warn', s.proxied ? T.checkProxy : T.checkProxyTodo);
+    document.getElementById('proxy-first').hidden = s.proxied;
+    if (s.tls === 'ok') set('c-trust', 'ok', T.checkTrust);
+    else if (s.tls === 'rejected') set('c-trust', 'err', T.checkTrustRejected.replace('{host}', s.rejected_host || 'An app'));
+    else set('c-trust', s.proxied ? 'warn' : 'todo', T.checkTrustTodo);
+    set('c-https', s.tls === 'ok' ? 'ok' : 'todo');
+    document.getElementById('done').hidden = s.tls !== 'ok';
+  }
+  function poll() {
+    fetch('/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(render).catch(function () {});
+  }
+  render({{.Initial}});
+  setInterval(poll, 2000);
+})();
+</script>
+</body>
+</html>

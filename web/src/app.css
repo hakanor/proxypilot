@@ -1,0 +1,258 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
+/* Dark is the default theme; light only when data-theme="light". */
+/* The shadcn-svelte components use newer bits-ui attribute names (data-checked, data-open…);
+   bits-ui 2.x emits data-state / data-orientation, so map both. */
+@custom-variant data-checked (&:where([data-state='checked'], [data-checked]:not([data-checked='false'])));
+@custom-variant data-unchecked (&:where([data-state='unchecked'], [data-unchecked]));
+@custom-variant data-active (&:where([data-state='active'], [data-active]:not([data-active='false'])));
+@custom-variant data-open (&:where([data-state='open'], [data-open]:not([data-open='false'])));
+@custom-variant data-closed (&:where([data-state='closed'], [data-closed]));
+@custom-variant data-horizontal (&:where([data-orientation='horizontal'], [data-horizontal]));
+@custom-variant data-vertical (&:where([data-orientation='vertical'], [data-vertical]));
+@custom-variant dark (&:not(:where([data-theme='light'], [data-theme='light'] *)));
+
+/* Tokens: docs/design/DESIGN.md §3. Dark is the default. */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1b1b1b;
+  --panel: #212121;
+  --zebra: #1f1f1f;
+  --border: #2c2c2c;
+  --field: #2a2a2a;
+  --field-border: #333333;
+  --head: #a8a8a8;
+  --menu: #262626;
+  --menu-border: #363636;
+  --text: #ececec;
+  --pp-muted: #bdbdbd;
+  --faint: #8c8c8c;
+  --pp-accent: #1db954;
+  --pp-accent-bg: #1f3a2a;
+  --pp-accent-text: #3ddc84;
+  --sel: #1f3a2a;
+  --neutral: #b3b3b3;
+  --neutral-bg: #2a2a2a;
+  --hover: #2a2a2a;
+  --ok: #3ddc84;
+  --ok-bg: #18291e;
+  --c4: #f59b23;
+  --c4-bg: #2e2416;
+  --err: #f15e6c;
+  --err-bg: #2e1a1c;
+  --warn: #f59b23;
+  --warn-bg: #2e2416;
+  --ai: #e8e8e8;
+  --ai-bg: #1f1f1f;
+  --record: #f15e6c;
+  /* Spacing: every bar, page and panel edge uses --gutter; cards use --card. */
+  --gutter: 20px;
+  --pp-card: 14px;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --panel: #f6f6f6;
+  --zebra: #f3f3f3;
+  --border: #e2e2e2;
+  --field: #f6f6f6;
+  --field-border: #e2e2e2;
+  --head: #8a8a8a;
+  --menu: #ffffff;
+  --menu-border: #e2e2e2;
+  --hover: #eeeeee;
+  --text: #191414;
+  --pp-muted: #5e5e5e;
+  --faint: #8a8a8a;
+  --pp-accent: #1a9e4b;
+  --pp-accent-bg: #e6f6ec;
+  --pp-accent-text: #137a3a;
+  --sel: #e4efe8;
+  --neutral: #4b5563;
+  --neutral-bg: #eeeeee;
+  --ok: #166534;
+  --ok-bg: #dcfce7;
+  --c4: #c2410c;
+  --c4-bg: #ffedd5;
+  --err: #b91c1c;
+  --err-bg: #fdecec;
+  --warn: #92400e;
+  --warn-bg: #fef3c7;
+  --ai: #191414;
+  --ai-bg: #efefef;
+  --record: #b91c1c;
+}
+
+/* shadcn-svelte theme, mapped onto the C palette above (both themes follow automatically). */
+:root {
+  --radius: 9px;
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--panel);
+  --card-foreground: var(--text);
+  --popover: var(--menu);
+  --popover-foreground: var(--text);
+  --primary: var(--pp-accent);
+  --primary-foreground: #0b0b0b;
+  --secondary: var(--field);
+  --secondary-foreground: var(--text);
+  --muted: var(--hover);
+  --muted-foreground: var(--pp-muted);
+  --accent: var(--pp-accent-bg);
+  --accent-foreground: var(--pp-accent-text);
+  --destructive: var(--err);
+  --input: var(--field-border);
+  --ring: var(--pp-accent);
+}
+
+@theme inline {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 3px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  /* C extras */
+  --color-panel: var(--panel);
+  --color-field: var(--field);
+  --color-faint: var(--faint);
+  --color-head: var(--head);
+  --color-sel: var(--sel);
+  --color-hover: var(--hover);
+  --color-zebra: var(--zebra);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-err: var(--err);
+  --color-err-bg: var(--err-bg);
+  --color-c4: var(--c4);
+  --color-c4-bg: var(--c4-bg);
+  --color-neutral-fg: var(--neutral);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-record: var(--record);
+  --spacing-gutter: var(--gutter);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+}
+
+/* JetBrains Mono turns "--flag" into a dash ligature; commands must read literally. */
+.mono,
+code,
+pre,
+kbd {
+  font-variant-ligatures: none;
+  font-feature-settings: 'calt' 0, 'liga' 0;
+}
+
+/* In the base layer so component utilities (text colour, weight, size) win over it. */
+@layer base {
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+}
+
+
+/* One chevron for every select (the native arrow sits off-centre in WebKit). */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a8a8a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  padding-right: 30px !important;
+}
+
+
+.pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.neutral { background: var(--neutral-bg); color: var(--neutral); }
+.pill.c4 { background: var(--c4-bg); color: var(--c4); }
+.pill.err { background: var(--err-bg); color: var(--err); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+
+
+.section-label {
+  padding: 6px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pp-muted);
+  letter-spacing: 0.05em;
+}
+
+kbd {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--neutral-bg);
+  color: var(--text);
+  font-size: 11px;
+}
+
+/* Default keyboard focus ring. In the base layer so component utilities (outline-none,
+   ring-*) win; text fields show focus through their own border instead. */
+@layer base {
+  :where(:focus-visible):not(input, textarea, select, [contenteditable]) {
+    outline: 2px solid var(--pp-accent);
+    outline-offset: 1px;
+  }
+}

@@ -1,0 +1,1057 @@
+{
+  "app": {
+    "name": "ProxyPilot"
+  },
+  "toolbar": {
+    "record": "Record",
+    "recording": "Recording",
+    "paused": "Paused",
+    "clear": "Clear",
+    "filterPlaceholder": "Filter… host:api.* status:4xx",
+    "errorsOnly": "Errors",
+    "autoScroll": "Auto-scroll",
+    "rules": "Rules",
+    "breakpoints": "Breakpoints",
+    "ssl": "SSL",
+    "sslModes": {
+      "all": "Intercept all",
+      "allowlist": "Allowlist only",
+      "off": "Tunnel all"
+    },
+    "toggleTheme": "Toggle theme",
+    "proxyUp": "Proxy listening on {addr}",
+    "removeChip": "Remove filter {chip}",
+    "export": "Export",
+    "import": "Import",
+    "exportHar": "HAR (visible {n})",
+    "exportHarAll": "HAR (all)",
+    "exportSession": "Session file (visible {n})",
+    "exportSessionAll": "Session file (all)",
+    "exportRedacted": "Secrets are masked in exports.",
+    "includeSecrets": "Include secrets",
+    "importing": "Importing… {pct}%",
+    "imported": "Imported {n} flows into a new session",
+    "systemProxy": "System proxy",
+    "systemProxyOn": "System proxy on",
+    "systemProxyOff": "System proxy off",
+    "systemProxyAdmin": "macOS needs administrator rights. Run in Terminal: {cmd}",
+    "pausedResume": "Paused · Resume",
+    "resumeHint": "Recording was paused. Click to record again.",
+    "pauseRecording": "Pause recording",
+    "resumeRecording": "Resume recording",
+    "compose": "Compose",
+    "clearHint": "Clear (⌘K)",
+    "listening": "Listening on {addr}",
+    "notRunning": "Proxy not running",
+    "more": "More",
+    "theme": "Theme",
+    "themeDark": "Dark theme",
+    "themeLight": "Light theme",
+    "docs": "Docs",
+    "typeFilter": "Content type",
+    "notifyEnable": "Turn on notifications",
+    "notifyAsk": "Get a desktop alert when a request pauses at a breakpoint, even when this tab is in the background.",
+    "notifyOn": "Notifications are on · click to send a test",
+    "notifyBlocked": "Notifications are blocked. Allow them for this site in your browser's site settings, then reload.",
+    "notifyTestTitle": "ProxyPilot test notification",
+    "notifyTestBody": "If you can read this, breakpoint alerts will reach you.",
+    "noCaching": "No caching",
+    "noCachingHint": "Strips cache headers so every request reaches the server: no 304s, no cached responses.",
+    "noCachingOn": "No caching on: every request goes to the server.",
+    "noCachingOff": "No caching off: apps and browsers can use their caches again.",
+    "badgeLan": "LAN",
+    "badgeNoCache": "No cache",
+    "throttle": "Network throttle",
+    "throttleHint": "Simulate a slow connection: each request waits, then downloads at the profile's speed.",
+    "throttleProfiles": {
+      "off": "Off",
+      "edge": "EDGE",
+      "3g": "3G",
+      "lte": "LTE",
+      "bad-wifi": "Bad Wi-Fi",
+      "custom": "Custom"
+    },
+    "throttleHosts": "Only these hosts: api.example.com, *.cdn.net",
+    "throttleSpec": "↓ {down} · ↑ {up} · +{ms} ms latency"
+  },
+  "sidebar": {
+    "views": "VIEWS",
+    "all": "All",
+    "pinned": "Pinned",
+    "sources": "SOURCES",
+    "proxy": "Proxy",
+    "chrome": "Chrome",
+    "composer": "Composer",
+    "clients": "CLIENTS",
+    "unknownClient": "Unknown",
+    "domains": "DOMAINS",
+    "tabs": "CHROME TABS",
+    "search": "Filter apps, domains…",
+    "devices": "DEVICES",
+    "allTraffic": "All traffic",
+    "noMatch": "Nothing matches",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "favorites": "FAVORITES",
+    "simulators": "SIMULATORS",
+    "thisMac": "THIS MAC"
+  },
+  "table": {
+    "index": "#",
+    "url": "URL",
+    "client": "Client",
+    "clock": "Time",
+    "dur": "Duration",
+    "method": "Method",
+    "host": "Host",
+    "path": "Path",
+    "status": "Status",
+    "type": "Type",
+    "size": "Size",
+    "duration": "Time",
+    "when": "At",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "ruleMark": "Rule applied: {ids}",
+    "resize": "Drag to resize · double-click to reset"
+  },
+  "status": {
+    "pending": "…",
+    "paused": "Paused",
+    "error": "Error",
+    "tunnel": "Tunnel"
+  },
+  "detail": {
+    "close": "Close",
+    "resize": "Resize panel",
+    "loading": "Waiting for the response…",
+    "evicted": "This flow was removed from storage (retention limit); only the summary row is left.",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "soon": "Available in a later version ({task})",
+    "tabs": {
+      "response": "Response",
+      "request": "Request",
+      "headers": "Headers",
+      "hex": "Hex",
+      "timing": "Timing",
+      "graphql": "GraphQL",
+      "header": "Header",
+      "query": "Query",
+      "cookies": "Cookies",
+      "body": "Body",
+      "raw": "Raw",
+      "messages": "Messages"
+    },
+    "requestPane": "Request",
+    "responsePane": "Response",
+    "mappedFrom": "Mapped from {url}",
+    "rewritten": "Rewritten by a rule ({phase})",
+    "repeated": "Sent again: {status}",
+    "breakpointAdded": "Breakpoint added: {name}. The next matching request pauses on the Breakpoints page.",
+    "protocol": "Protocol between the app and ProxyPilot"
+  },
+  "traffic": {
+    "rateHint": "Live throughput through the proxy (download / upload)",
+    "session": "Session",
+    "http": "HTTP",
+    "websocket": "WebSocket",
+    "frames": "frames",
+    "total": "Total",
+    "rows": "{shown} of {total}",
+    "selected": "{n} selected",
+    "down": "↓ {rate}",
+    "up": "↑ {rate}",
+    "ruleChips": {
+      "map_local": "Map Local {n}",
+      "breakpoint": "Breakpoint {n}",
+      "rewrite": "Rewrite {n}",
+      "map_remote": "Map Remote {n}"
+    },
+    "sslChip": "SSL: {mode}",
+    "resize": "Drag to resize"
+  },
+  "banner": {
+    "disconnected": "Lost connection to the ProxyPilot daemon. Reconnecting in {seconds}s…",
+    "reconnecting": "Reconnecting…",
+    "retryNow": "Retry now",
+    "unauthorized": "Not signed in. Run `proxypilot ui` to open the UI with a fresh token.",
+    "dropped": "The UI fell behind and skipped {count} events; reloaded the latest traffic."
+  },
+  "empty": {
+    "title": "No traffic yet",
+    "body": "Point a simulator, device or browser at the proxy on {addr} to see requests here.",
+    "setup": "Setup guide",
+    "noMatch": "No requests match the current filter.",
+    "clearFilter": "Clear filter"
+  },
+  "confirm": {
+    "clear": "Delete all recorded traffic?"
+  },
+  "shortcuts": {
+    "nav": "navigate",
+    "open": "details",
+    "filter": "filter",
+    "clear": "clear",
+    "pin": "pin",
+    "execute": "execute",
+    "cont": "continue",
+    "abortKey": "abort",
+    "next": "next paused"
+  },
+  "actions": {
+    "copyUrl": "Copy URL",
+    "copyCurl": "Copy as cURL",
+    "repeat": "Repeat",
+    "compose": "Edit in Composer",
+    "mapLocal": "Save as Map Local",
+    "breakpoint": "Breakpoint",
+    "pin": "Pin",
+    "unpin": "Unpin"
+  },
+  "viewer": {
+    "tree": "Tree",
+    "pretty": "Pretty",
+    "raw": "Raw",
+    "preview": "Preview",
+    "table": "Table",
+    "hex": "Hex",
+    "search": "Search…",
+    "matches": "{n} matches",
+    "copyBody": "Copy body",
+    "copyPath": "Copy JSON path",
+    "copyValue": "Copy value",
+    "items": "{n} items",
+    "keys": "{n} keys",
+    "showMore": "Show {n} more",
+    "noBody": "No body",
+    "noHeaders": "No headers",
+    "noQuery": "No query parameters",
+    "noCookies": "No cookies",
+    "query": "Query parameters",
+    "body": "Body",
+    "cookies": "Cookies",
+    "requestHeaders": "Request headers",
+    "responseHeaders": "Response headers",
+    "reveal": "Reveal secrets",
+    "hide": "Hide secrets",
+    "truncated": "Showing first {shown} of {total}.",
+    "loadFull": "Load full body",
+    "download": "Download",
+    "tooLarge": "Body is larger than the viewer limit ({limit}); download it to see everything.",
+    "parsing": "Parsing…",
+    "invalidJson": "Not valid JSON, showing raw text.",
+    "imageSize": "{w} × {h} px · {size}",
+    "binary": "Binary body ({size}). Use the Hex tab.",
+    "offset": "Offset",
+    "name": "Name",
+    "value": "Value",
+    "encoded": "{encoding} on the wire: {size}",
+    "truncatedJson": "The tree needs the whole body. Showing the first part as text; use \"Load full body\".",
+    "copyJson": "Click: copy as JSON · Alt+click: copy JSON path",
+    "copyKeyValue": "Click: copy key and value · Alt+click: copy JSON path",
+    "searchHint": "Enter: next match · Shift+Enter: previous · Esc: clear",
+    "noMatches": "No matches",
+    "copyRaw": "Copy raw"
+  },
+  "timing": {
+    "dns": "DNS lookup",
+    "connect": "TCP connect",
+    "tls": "TLS handshake",
+    "wait": "Waiting (TTFB)",
+    "download": "Content download",
+    "total": "Total",
+    "reused": "Upstream connection reused",
+    "yes": "yes",
+    "no": "no",
+    "none": "No timing data for this flow."
+  },
+  "error": {
+    "causes": "Likely causes",
+    "fixes": "What you can do",
+    "details": "Details",
+    "fixBypass": "Add host to SSL bypass list",
+    "fixBypassDone": "Added {host} to the SSL bypass list",
+    "fixSetup": "Open device setup",
+    "kinds": {
+      "client_tls_rejected": {
+        "title": "The client rejected the ProxyPilot certificate",
+        "body": "The TLS handshake started, but the client closed the connection after receiving the certificate generated by ProxyPilot. No request was decrypted.",
+        "causes": [
+          "The ProxyPilot root CA is not installed or not trusted on this device.",
+          "The app uses SSL pinning for this host.",
+          "Android 7+: the app does not trust user-installed certificates."
+        ]
+      },
+      "client_tls_error": {
+        "title": "TLS handshake with the client failed",
+        "body": "The client and ProxyPilot could not agree on a TLS session.",
+        "causes": [
+          "The client requires a TLS version or cipher the proxy does not offer.",
+          "The client sent non-TLS data on a TLS port."
+        ]
+      },
+      "upstream_tls_error": {
+        "title": "The server's certificate could not be verified",
+        "body": "ProxyPilot connected to the server, but the TLS handshake with it failed.",
+        "causes": [
+          "The server uses a self-signed or expired certificate.",
+          "The server requires a client certificate (mTLS)."
+        ]
+      },
+      "upstream_connect_error": {
+        "title": "Could not reach the server",
+        "body": "ProxyPilot could not open a connection to the upstream host, or it closed while sending the response.",
+        "causes": [
+          "The host name does not resolve (DNS).",
+          "The server is down or the port is closed.",
+          "A firewall or VPN blocks the connection."
+        ]
+      },
+      "timeout": {
+        "title": "The request timed out",
+        "body": "The server did not answer in time.",
+        "causes": [
+          "The server is slow or overloaded.",
+          "The network path is unreliable."
+        ]
+      },
+      "client_aborted": {
+        "title": "The client cancelled the request",
+        "body": "The client closed the connection before the response finished.",
+        "causes": [
+          "The app cancelled the request (navigation, timeout, retry).",
+          "The user closed the page or app."
+        ]
+      },
+      "proxy_loop": {
+        "title": "Request loop detected",
+        "body": "The request was addressed to the proxy itself and was rejected to avoid an infinite loop.",
+        "causes": [
+          "The client is configured to send its proxy traffic to ProxyPilot's own address as a target."
+        ]
+      },
+      "aborted": {
+        "title": "Request aborted by a rule or breakpoint",
+        "body": "A rule or a breakpoint decision stopped this request.",
+        "causes": [
+          "A breakpoint was resolved with Abort.",
+          "A rule blocks this URL."
+        ]
+      },
+      "unknown": {
+        "title": "The request failed",
+        "body": "ProxyPilot recorded an error for this flow.",
+        "causes": []
+      }
+    }
+  },
+  "nav": {
+    "traffic": "Traffic",
+    "setup": "Setup",
+    "docs": "Docs",
+    "uninstall": "Uninstall",
+    "rules": "Rules",
+    "breakpoints": "Breakpoints",
+    "compose": "Compose"
+  },
+  "setup": {
+    "targets": "TARGETS",
+    "targetList": {
+      "ios": "iOS Simulator",
+      "mac": "macOS apps",
+      "android": "Android (adb)",
+      "device": "Physical device (QR)",
+      "chrome": "Chrome",
+      "cli": "CLI / Node / Python"
+    },
+    "later": "Coming in a later version.",
+    "iosTitle": "iOS Simulator",
+    "iosBody": "Simulators use the Mac's network settings. Install the ProxyPilot CA into each simulator, then turn on the macOS system proxy so Safari and apps send their traffic through ProxyPilot.",
+    "simulators": "Simulators",
+    "simCount": "{booted} booted · {total} total",
+    "refresh": "Refresh",
+    "installAll": "Install CA on all booted",
+    "device": {
+      "title": "Physical device",
+      "body": "Connect an iPhone or Android phone on the same Wi-Fi. Scan the code with the phone camera to open the certificate page, set the Wi-Fi proxy, and trust the certificate.",
+      "scan": "Scan with the phone camera",
+      "or": "or open",
+      "proxyFor": "Wi-Fi proxy for the phone",
+      "server": "Server",
+      "port": "Port",
+      "otherIps": "Other addresses: {ips}",
+      "loopback": "The proxy listens on {addr} only, so phones cannot reach it. Turn on the switch above, or restart it on all interfaces from the terminal (only on a network you trust):",
+      "firewall": "The macOS firewall is on. If the phone cannot connect, allow incoming connections for ProxyPilot in System Settings → Network → Firewall → Options.",
+      "noLan": "This Mac has no LAN address. Connect it to the same Wi-Fi as the phone.",
+      "steps": "STEPS",
+      "ios": "iPhone / iPad",
+      "android": "Android",
+      "iosSteps": [
+        "Settings → Wi-Fi → (i) next to your network → Configure Proxy → Manual → server {ip}, port {port}.",
+        "In Safari open http://proxypilot.cert and allow the profile download.",
+        "Settings → Profile Downloaded → Install.",
+        "Settings → General → About → Certificate Trust Settings → turn on full trust for the ProxyPilot CA."
+      ],
+      "androidSteps": [
+        "Settings → Network → Wi-Fi → your network → Edit → Advanced → Proxy: Manual, host {ip}, port {port}.",
+        "In the browser open http://proxypilot.cert and download the .crt.",
+        "Settings → Security → Encryption & credentials → Install a certificate → CA certificate.",
+        "Apps trust user CAs only in debug builds with a network_security_config; browsers work right away."
+      ],
+      "devices": "Devices",
+      "noDevices": "Waiting for a device… It appears here with its first request.",
+      "local": "this Mac",
+      "requests": "{n} requests",
+      "rename": "Rename",
+      "save": "Save",
+      "tls": {
+        "ok": "HTTPS decrypted",
+        "rejected": "Certificate rejected",
+        "tunneled": "HTTPS tunneled",
+        "unknown": "No HTTPS yet"
+      },
+      "rejectedHint": "{host} refused the ProxyPilot certificate: trust it on the device, or the app pins its certificate.",
+      "lan": "Allow devices on this network",
+      "lanOff": "Off: only this Mac can use the proxy. Turn it on to connect a phone on the same Wi-Fi.",
+      "lanOn": "On: anyone on this Wi-Fi can use the proxy on port {port}. Turn it off when you're done, especially on shared networks.",
+      "lanFixed": "On because the proxy was started with --proxy-listen {addr}. Restart without it to make this switchable."
+    },
+    "runtime": "Runtime",
+    "state": "State",
+    "ca": "CA",
+    "caStates": {
+      "installed": "Installed",
+      "missing": "Not installed",
+      "unknown": "Boot to check"
+    },
+    "install": "Install CA",
+    "reinstall": "Reinstall",
+    "installed": "Installed the CA on {name}. Restart the app to pick it up.",
+    "notBooted": "Boot the simulator first",
+    "simNote": "The CA stays installed after the simulator shuts down. Restart the app after installing so it picks up the new trust.",
+    "noSims": "No simulators found. Create one in Xcode → Window → Devices and Simulators.",
+    "sysProxy": "macOS system proxy",
+    "on": "On",
+    "off": "Off",
+    "managed": "Managed by ProxyPilot since {time}",
+    "sysProxyBody": "Points HTTP and HTTPS of every network service at {target}. Bypass: localhost, 127.0.0.1, *.local.",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off and restore",
+    "copyCmd": "Copy command",
+    "cmdTitle": "Same in the terminal",
+    "restoreNote": "Turning it off restores the exact previous settings from a backup. `proxypilot stop` does it too.",
+    "needsAdmin": "macOS asked for administrator rights. Run these commands in Terminal:",
+    "noProxy": "no proxy",
+    "caTitle": "Root certificate",
+    "fingerprint": "SHA-256 {fp}",
+    "trustStates": {
+      "trusted": "Trusted",
+      "not_trusted": "Not trusted",
+      "unknown": "Unknown"
+    },
+    "onThisMac": "on this Mac (needed for macOS apps, not for simulators)",
+    "trustCmd": "Trust it system-wide with:",
+    "notAvailable": "Not available on this machine: {reason}",
+    "android": {
+      "title": "Android emulator and devices",
+      "body": "ProxyPilot sets the device's proxy over adb. Emulators reach this Mac at 10.0.2.2; USB devices use adb reverse, so Wi-Fi does not matter.",
+      "noAdb": "adb was not found. Install Android SDK platform-tools (Android Studio → SDK Manager), or set android.adb in config.yaml.",
+      "noDevices": "No device. Start an emulator, or connect a phone with USB debugging on and accept the prompt.",
+      "refresh": "Refresh",
+      "device": "Device",
+      "api": "API",
+      "kind": "Kind",
+      "proxy": "Proxy",
+      "ca": "CA",
+      "emulator": "Emulator",
+      "physical": "USB device",
+      "unauthorized": "Unlock the phone and accept the USB debugging prompt.",
+      "mode": "Route",
+      "modes": {
+        "auto": "Automatic",
+        "emulator": "Emulator (10.0.2.2)",
+        "usb": "USB (adb reverse)",
+        "wifi": "Wi-Fi (LAN IP)"
+      },
+      "caMode": "Certificate",
+      "caModes": {
+        "user": "User CA (manual step on device)",
+        "system": "System CA (root, until reboot)",
+        "none": "Don't install"
+      },
+      "connect": "Connect",
+      "remove": "Disconnect",
+      "connected": "Connected {serial}: {proxy}",
+      "removed": "Disconnected {serial}",
+      "ours": "via ProxyPilot",
+      "none": "none",
+      "userCa": "user CA copied",
+      "systemCa": "system CA",
+      "manual": "Left to do",
+      "devNote": "Apps trust user certificates only in debug builds. Add this to the app:",
+      "flutter": "Flutter ignores the Android proxy. In debug builds:",
+      "cli": "Same in the terminal"
+    },
+    "chrome": {
+      "title": "Chrome",
+      "body": "Capture Chrome tabs over the DevTools protocol: no proxy and no certificate. Rules (Map Local, rewrite, map remote, breakpoints) apply to these requests too.",
+      "launch": "Launch Chrome",
+      "launchHint": "Opens Chrome with a separate ProxyPilot profile. Chrome does not allow debugging your main profile.",
+      "url": "Start page (optional)",
+      "attach": "Attach",
+      "attachHint": "Or connect to a Chrome you started yourself with --remote-debugging-port:",
+      "port": "Port",
+      "detach": "Stop capturing",
+      "connected": "Connected to {browser}",
+      "launched": "launched by ProxyPilot",
+      "attached": "attached on {endpoint}",
+      "notConnected": "Not connected.",
+      "tabs": "Tabs",
+      "noTabs": "No tabs yet.",
+      "watching": "Capturing",
+      "paused": "Not capturing",
+      "requests": "{n} requests",
+      "macHint": "macOS may ask whether Chrome may use its keychain or accept connections for the new profile; denying is fine.",
+      "cli": "Same in the terminal"
+    },
+    "guide": {
+      "stepOf": "Step {n} of {total}",
+      "back": "Back",
+      "next": "Next",
+      "play": "Play",
+      "pause": "Pause",
+      "ios": {
+        "1": {
+          "title": "Settings",
+          "caption": "Open Settings and tap Wi-Fi.",
+          "rows": [
+            "~",
+            "Airplane Mode|[off]",
+            "*Wi-Fi|Home Wi-Fi",
+            "Bluetooth|On",
+            "~",
+            "~",
+            "~"
+          ]
+        },
+        "2": {
+          "title": "Wi-Fi",
+          "caption": "Tap the (i) next to the network you're on — the same Wi-Fi as this Mac.",
+          "rows": [
+            "Wi-Fi|[on]",
+            "*✓  Home Wi-Fi|[i]",
+            "~",
+            "~",
+            "~"
+          ]
+        },
+        "3": {
+          "title": "Home Wi-Fi",
+          "caption": "Scroll to the bottom and tap Configure Proxy.",
+          "rows": [
+            "~",
+            "~",
+            "IP Address|192.168.1.31",
+            "~",
+            "~",
+            "*Configure Proxy|Off"
+          ]
+        },
+        "4": {
+          "title": "Configure Proxy",
+          "caption": "Choose Manual.",
+          "rows": [
+            "Off|[check]",
+            "*Manual",
+            "Automatic"
+          ]
+        },
+        "5": {
+          "title": "Configure Proxy",
+          "caption": "Enter the server {ip} and port {port}, then tap Save.",
+          "rows": [
+            "Off",
+            "Manual|[check]",
+            "Server|{ip}",
+            "Port|{port}",
+            "Authentication|[off]",
+            "*Save"
+          ]
+        },
+        "6": {
+          "title": "proxypilot.cert",
+          "caption": "Open Safari, go to http://proxypilot.cert and tap Download profile. Tap Allow when asked.",
+          "rows": [
+            "~",
+            "~",
+            "*Download profile",
+            "~"
+          ],
+          "url": "proxypilot.cert"
+        },
+        "7": {
+          "title": "Settings",
+          "caption": "Back in Settings, tap Profile Downloaded at the top, then Install.",
+          "rows": [
+            "*Profile Downloaded|[>]",
+            "~",
+            "Wi-Fi|Home Wi-Fi",
+            "~",
+            "~"
+          ]
+        },
+        "8": {
+          "title": "Install Profile",
+          "caption": "Tap Install, enter your passcode and confirm.",
+          "rows": [
+            "ProxyPilot CA|Not verified",
+            "~",
+            "~",
+            "*Install"
+          ]
+        },
+        "9": {
+          "title": "Certificate Trust Settings",
+          "caption": "Settings → General → About → Certificate Trust Settings. Turn on ProxyPilot CA.",
+          "rows": [
+            "~",
+            "*ProxyPilot CA|[off]",
+            "~"
+          ]
+        },
+        "10": {
+          "title": "ProxyPilot",
+          "caption": "Done. Open any app — its traffic shows up here with the phone as a device.",
+          "rows": [
+            "Proxy|{ip}:{port}",
+            "HTTPS|[check]",
+            "~",
+            "~"
+          ]
+        }
+      },
+      "android": {
+        "1": {
+          "title": "Settings",
+          "caption": "Open Settings and tap Network & internet.",
+          "rows": [
+            "~",
+            "*Network & internet|[>]",
+            "Connected devices|[>]",
+            "~",
+            "~",
+            "~"
+          ]
+        },
+        "2": {
+          "title": "Network & internet",
+          "caption": "Tap Internet.",
+          "rows": [
+            "*Internet|Home Wi-Fi",
+            "SIMs|[>]",
+            "~",
+            "~"
+          ]
+        },
+        "3": {
+          "title": "Internet",
+          "caption": "Tap the gear next to the network you're on — the same Wi-Fi as this Mac.",
+          "rows": [
+            "Wi-Fi|[on]",
+            "*Home Wi-Fi|[>]",
+            "~",
+            "~",
+            "~"
+          ]
+        },
+        "4": {
+          "title": "Home Wi-Fi",
+          "caption": "Tap the pencil (Edit) at the top, then open Advanced options.",
+          "rows": [
+            "~",
+            "~",
+            "*Advanced options|[>]",
+            "~"
+          ]
+        },
+        "5": {
+          "title": "Advanced options",
+          "caption": "Set Proxy to Manual.",
+          "rows": [
+            "~",
+            "*Proxy|None",
+            "IP settings|DHCP"
+          ]
+        },
+        "6": {
+          "title": "Advanced options",
+          "caption": "Enter the hostname {ip} and port {port}, then tap Save.",
+          "rows": [
+            "Proxy|Manual",
+            "Proxy hostname|{ip}",
+            "Proxy port|{port}",
+            "~",
+            "*Save"
+          ]
+        },
+        "7": {
+          "title": "proxypilot.cert",
+          "caption": "Open Chrome, go to http://proxypilot.cert and download the certificate.",
+          "rows": [
+            "~",
+            "~",
+            "*Download .crt",
+            "~"
+          ],
+          "url": "proxypilot.cert"
+        },
+        "8": {
+          "title": "Encryption & credentials",
+          "caption": "Settings → Security → Encryption & credentials → Install a certificate.",
+          "rows": [
+            "~",
+            "*Install a certificate|[>]",
+            "~",
+            "~"
+          ]
+        },
+        "9": {
+          "title": "Install a certificate",
+          "caption": "Choose CA certificate, tap Install anyway, then pick the downloaded file.",
+          "rows": [
+            "*CA certificate",
+            "VPN & app user certificate",
+            "Wi-Fi certificate"
+          ]
+        },
+        "10": {
+          "title": "ProxyPilot",
+          "caption": "Done. Browsers work right away; your own apps trust the CA in debug builds with a network_security_config.",
+          "rows": [
+            "Proxy|{ip}:{port}",
+            "HTTPS|[check]",
+            "~",
+            "~"
+          ]
+        }
+      }
+    },
+    "targetGroups": {
+      "mobile": "MOBILE",
+      "desktop": "THIS MAC"
+    }
+  },
+  "uninstall": {
+    "title": "Remove ProxyPilot from this Mac",
+    "body": "Undo everything ProxyPilot changed. Automatic steps run here; steps that need an administrator or the device itself show what to do.",
+    "run": "Run automatic cleanup ({n})",
+    "running": "Cleaning up…",
+    "nothing": "Nothing to clean up automatically",
+    "states": {
+      "pending": "To remove",
+      "clean": "Clean",
+      "manual": "Manual",
+      "unavailable": "Not available"
+    },
+    "how": {
+      "auto": "automatic",
+      "admin": "needs administrator",
+      "device": "on the device",
+      "terminal": "terminal"
+    },
+    "steps": {
+      "system_proxy": {
+        "title": "macOS system proxy",
+        "pending": "Network services point at ProxyPilot. The previous settings will be restored exactly.",
+        "clean": "Not changed by ProxyPilot."
+      },
+      "simulators": {
+        "title": "iOS simulators",
+        "pending": "The CA is installed on these simulators. Only the ProxyPilot certificate is removed; restart them afterwards.",
+        "clean": "No simulator has the ProxyPilot CA."
+      },
+      "mac_trust": {
+        "title": "macOS keychain trust",
+        "pending": "The ProxyPilot CA is trusted system-wide. Run in Terminal:",
+        "clean": "The CA is not trusted system-wide."
+      },
+      "devices": {
+        "title": "Physical devices",
+        "manual": "iOS: Settings → General → VPN & Device Management → ProxyPilot CA → Remove Profile, and turn off the Wi-Fi proxy. Android: Settings → Security → Encryption & credentials → User credentials → ProxyPilot CA → Remove."
+      },
+      "data": {
+        "title": "Data directory",
+        "manual": "The CA private key, recorded traffic and the API token. Deleting it is final and stops ProxyPilot."
+      },
+      "android": {
+        "title": "Android devices (adb)",
+        "pending": "These devices still send traffic to ProxyPilot. Their proxy setting and USB port forward will be cleared.",
+        "clean": "No connected Android device uses ProxyPilot."
+      }
+    },
+    "done": "Done: {items}",
+    "cli": "Prefer the terminal? `proxypilot uninstall` shows the same plan; add `--yes` to apply it."
+  },
+  "docs": {
+    "search": "Search docs…",
+    "onThisPage": "ON THIS PAGE",
+    "copy": "Copy",
+    "copied": "Copied",
+    "noResults": "No pages match."
+  },
+  "rules": {
+    "title": "Rules",
+    "summary": "{total} rules · {enabled} enabled",
+    "new": "New rule",
+    "empty": "No rules yet. Create one, or open a request and choose “Save as Map Local”.",
+    "cols": {
+      "rule": "Rule",
+      "type": "Type",
+      "owner": "Created by",
+      "expires": "Expires",
+      "hits": "Hits"
+    },
+    "types": {
+      "map_local": "Map Local",
+      "breakpoint": "Breakpoint",
+      "rewrite": "Rewrite",
+      "map_remote": "Map Remote"
+    },
+    "never": "—",
+    "enable": "Enable",
+    "disable": "Disable",
+    "edit": "Edit rule",
+    "create": "New rule",
+    "fields": {
+      "name": "Name",
+      "url": "URL (wildcard * or regex)",
+      "regex": "Regular expression",
+      "methods": "Methods (comma separated, empty = any)",
+      "matchHeaders": "Request headers (Name: value per line, wildcards allowed)",
+      "priority": "Priority (higher runs first)",
+      "owner": "Owner",
+      "ttl": "Expires after (e.g. 30m, empty = never)",
+      "source": "Response source",
+      "file": "File",
+      "dir": "Folder",
+      "inline": "Inline",
+      "path": "Path on this Mac",
+      "body": "Body",
+      "status": "Status",
+      "headers": "Response headers (Name: value per line)",
+      "mode": "Mode",
+      "type": "Type",
+      "phase": "Phase",
+      "timeout": "Timeout (e.g. 60s, max 30m)",
+      "onTimeout": "When time runs out",
+      "to": "Send to (a trailing * keeps the rest of the path)",
+      "preserveHost": "Keep the original Host header",
+      "steps": "Steps (run in order)",
+      "addStep": "Add step",
+      "stepType": "Step",
+      "gqlOp": "GraphQL operation (optional, * wildcards)"
+    },
+    "sourceHint": {
+      "file": "Read on every request, so edits apply immediately. Content-Type comes from the extension.",
+      "dir": "The part of the URL after the pattern's * is looked up in this folder.",
+      "inline": "Stored in the rule."
+    },
+    "modes": {
+      "full": "Full: never contacts the server",
+      "body_only": "Body only: send upstream, replace the body"
+    },
+    "ownerLine": "{owner} · expires in {left} · you can edit it or make it permanent",
+    "makePermanent": "Make permanent",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Saved {name}",
+    "deleted": "Deleted {name}",
+    "confirmDelete": "Delete rule “{name}”?",
+    "savedMapLocal": "Created Map Local rule. Edit {file} to change the response.",
+    "phases": {
+      "request": "Request (before the server)",
+      "response": "Response (before the client)",
+      "both": "Both"
+    },
+    "bpHint": "Matching flows wait on the Breakpoints page, or for `proxypilot breakpoint wait`.",
+    "stepTypes": {
+      "set_header": "Set header",
+      "add_header": "Add header",
+      "remove_header": "Remove header",
+      "set_query": "Set query param",
+      "remove_query": "Remove query param",
+      "replace_body": "Replace in body",
+      "json_set": "Set JSON field",
+      "json_remove": "Remove JSON field",
+      "set_status": "Set status",
+      "set_url": "Set URL",
+      "set_path": "Set path"
+    },
+    "stepFields": {
+      "name": "Name",
+      "value": "Value",
+      "pattern": "Find",
+      "replacement": "Replace with",
+      "regex": "Regex",
+      "path": "JSON path ($.user.isPremium)",
+      "jsonValue": "Value (JSON: true, 3, \"text\")",
+      "status": "Status"
+    },
+    "rwHint": "Compressed bodies are decoded first; the edited body is sent without compression.",
+    "byAgent": "Created by an AI agent; it expires automatically",
+    "response": "Response",
+    "jsonInvalid": "Invalid JSON",
+    "formatJson": "Format JSON",
+    "fileSaveHint": "Saving the rule also writes this text to the file. The proxy reads the file on every request.",
+    "duplicate": "Duplicate",
+    "copyPattern": "Copy URL pattern",
+    "copyName": "{name} copy"
+  },
+  "bp": {
+    "title": "Breakpoints",
+    "paused": "{n} paused",
+    "defaultTimeout": "Default timeout 60s",
+    "manageRules": "Manage rules",
+    "queue": "PAUSED QUEUE",
+    "emptyTitle": "No paused requests",
+    "emptyBody": "Requests that match a breakpoint rule wait here. Create one on the Rules page or with `proxypilot rule add breakpoint --url '*/checkout'`.",
+    "newRule": "New breakpoint rule",
+    "request": "REQ",
+    "response": "RES",
+    "requestLong": "Request phase",
+    "responseLong": "Response phase",
+    "matchedRule": "Matched rule",
+    "agentHolding": "{owner} is holding this breakpoint and will decide. You can take over at any time.",
+    "takeOver": "Take over",
+    "method": "Method",
+    "url": "URL",
+    "status": "Status",
+    "original": "Original request",
+    "headers": "Headers",
+    "addHeader": "Add header",
+    "removeHeader": "Remove header",
+    "body": "Body",
+    "onTimeout": "On timeout: {action}",
+    "timeoutActions": {
+      "continue": "continue unchanged",
+      "abort": "abort"
+    },
+    "edited": "Edited — Execute sends your changes",
+    "truncated": "Body is larger than 10 MB and cannot be edited here.",
+    "encoded": "Shown decoded ({encoding}); an edited body is sent without compression.",
+    "extend": "+30s",
+    "abort": "Abort",
+    "continue": "Continue unchanged",
+    "execute": "Execute",
+    "last": "Last: {method} {path} {result}",
+    "results": {
+      "modify": "executed with edits",
+      "continue": "continued unchanged",
+      "abort": "aborted",
+      "timeout": "timed out and continued"
+    },
+    "notifyEnable": "Notify me",
+    "notifyOn": "Notifications on",
+    "notifyTitle": "Paused: {method} {path}",
+    "notifyBody": "Waiting for your decision ({left}s left)",
+    "alreadyResolved": "Someone else already resolved this breakpoint.",
+    "modes": {
+      "form": "Form",
+      "raw": "Raw HTTP",
+      "json": "JSON"
+    },
+    "format": "Format JSON",
+    "jsonInvalid": "Invalid JSON: {error}",
+    "rawError": {
+      "start": "The first line must look like “GET https://… HTTP/1.1” (request) or “HTTP/1.1 200” (response).",
+      "header": "Each header line must be “Name: value”."
+    },
+    "close": "Close (the request stays paused)",
+    "notifyShort": "A request is waiting for your decision."
+  },
+  "compose": {
+    "title": "Compose",
+    "fromFlow": "From request {id}",
+    "import": "Paste a cURL command",
+    "importBtn": "Import",
+    "importHint": "Copy as cURL from Chrome DevTools, Proxyman or ProxyPilot, then paste here.",
+    "method": "Method",
+    "url": "URL",
+    "headers": "Headers",
+    "addHeader": "Add header",
+    "body": "Body",
+    "count": "Times",
+    "concurrency": "At once",
+    "bypass": "Skip rules (Map Local, rewrite, breakpoints)",
+    "send": "Send",
+    "sending": "Sending…",
+    "results": "Results",
+    "open": "Open",
+    "limit": "Up to {count} times, {conc} at once.",
+    "export": "Export as",
+    "copy": "Copy",
+    "binary": "Binary body: save it with `proxypilot show <id> --raw --side req > body.bin`.",
+    "summary": "{n} sent · avg {ms} ms",
+    "aborted": "aborted"
+  },
+  "graphql": {
+    "operation": "Operation",
+    "query": "Query",
+    "variables": "Variables",
+    "data": "data",
+    "errors": "errors",
+    "noVariables": "No variables",
+    "noResponse": "No response body",
+    "persisted": "Persisted query (only a hash was sent)"
+  },
+  "menu": {
+    "copyUrl": "Copy URL",
+    "copyCurl": "Copy as cURL",
+    "repeat": "Repeat",
+    "compose": "Edit in Compose",
+    "tools": "Tools",
+    "breakpointReq": "Breakpoint on request",
+    "breakpointResp": "Breakpoint on response",
+    "mapLocal": "Map Local (save this response)",
+    "mapRemote": "Map Remote…",
+    "rewrite": "Rewrite…",
+    "block": "Block this URL",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "filterHost": "Show only {host}",
+    "bypass": "Bypass SSL for {host}",
+    "done": "{action}: {name}",
+    "copied": "Copied",
+    "blocked": "Blocked {url}"
+  },
+  "typeStrip": {
+    "all": "All",
+    "http": "HTTP",
+    "https": "HTTPS",
+    "ws": "WebSocket",
+    "json": "JSON",
+    "form": "Form",
+    "xml": "XML",
+    "js": "JS",
+    "css": "CSS",
+    "graphql": "GraphQL",
+    "document": "Document",
+    "media": "Media",
+    "other": "Other"
+  },
+  "ws": {
+    "filter": "Filter messages…",
+    "dir": {
+      "all": "All",
+      "up": "Sent",
+      "down": "Received"
+    },
+    "count": "{n} of {total}",
+    "truncated": "Only the first 64 KB was kept",
+    "copy": "Copy",
+    "empty": "No messages yet.",
+    "noMatch": "No message matches."
+  }
+}
