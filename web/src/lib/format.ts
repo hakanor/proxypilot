@@ -1,4 +1,4 @@
-// Number formatting helpers (DESIGN.md §2, §8): 1024 base, one decimal from 1 KB.
+// Number formatting helpers: 1024 base, one decimal from 1 KB.
 const nf1 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const nf0 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const units = ['B', 'KB', 'MB', 'GB', 'TB'];

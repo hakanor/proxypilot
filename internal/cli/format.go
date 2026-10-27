@@ -38,7 +38,7 @@ func (a *App) paint(code, s string) string {
 	return code + s + ansiReset
 }
 
-// statusText renders a status code or state with the DESIGN.md color meaning.
+// statusText renders a status code or state with the same colors as the web UI.
 func (a *App) statusText(status int, state, errKind string) string {
 	switch {
 	case errKind != "":
@@ -61,7 +61,7 @@ func (a *App) statusText(status int, state, errKind string) string {
 	return "-"
 }
 
-// formatBytes uses 1024 steps with one decimal from KB up (DESIGN.md §8).
+// formatBytes uses 1024 steps with one decimal from KB up.
 func formatBytes(n int64) string {
 	if n < 1024 {
 		return fmt.Sprintf("%d B", n)

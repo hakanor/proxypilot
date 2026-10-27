@@ -18,7 +18,7 @@
 @custom-variant data-vertical (&:where([data-orientation='vertical'], [data-vertical]));
 @custom-variant dark (&:not(:where([data-theme='light'], [data-theme='light'] *)));
 
-/* Tokens: docs/design/DESIGN.md §3. Dark is the default. */
+/* Color tokens. Dark is the default. */
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;

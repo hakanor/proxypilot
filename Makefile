@@ -13,7 +13,7 @@ LDFLAGS  := -s -w \
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/proxypilot
 
-# Builds the Svelte UI into internal/api/webdist (TASK-11).
+# Builds the Svelte UI into internal/api/webdist.
 web:
 	cd web && npm ci && npm run build
 

@@ -1,7 +1,7 @@
 import type { FlowRow } from './api';
 import { t } from './i18n';
 
-/** Pill text and color class for a row (DESIGN.md §3 status colors). */
+/** Pill text and color class for a row. */
 export function statusPill(r: FlowRow): { label: string; cls: string } {
   if (r.state === 'paused') return { label: t('status.paused'), cls: 'warn' };
   if (r.state === 'failed' || r.error_kind) return { label: r.status ? String(r.status) : t('status.error'), cls: 'err' };

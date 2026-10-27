@@ -93,7 +93,7 @@ Agents can list and search traffic, read bodies and WebSocket messages, add rule
 | `internal/mcpserver` | MCP server |
 | `internal/brand` | App icon (source of truth) |
 | `web/` | Svelte 5 + Tailwind v4 + shadcn-svelte UI |
-| `docs/design` | Design system, mockups and icons |
+| `docs/design` | App icon PNGs and the GitHub social preview |
 
 **Commands:**
 - `make test` runs the Go tests.
@@ -105,5 +105,3 @@ Agents can list and search traffic, read bodies and WebSocket messages, add rule
 **Docs:**
 - Users: [quickstart](docs/quickstart.md), [devices and troubleshooting](docs/devices.md), [CLI reference](docs/cli.md) (`make docs` regenerates it), [security](docs/security.md).
 - Releases: `.goreleaser.yaml` and `install.sh`.
-- UI rules: [docs/design/DESIGN.md](docs/design/DESIGN.md) and [docs/design/SHADCN.md](docs/design/SHADCN.md).
-- Task plan: [proxypilot-tasks/README.md](proxypilot-tasks/README.md).
