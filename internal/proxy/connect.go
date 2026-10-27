@@ -18,8 +18,9 @@ import (
 
 const (
 	clientHandshakeTimeout = 15 * time.Second
-	// After this many client_tls_rejected on one host a suggestion tag is set
-	// (the recorder turns it into a `suggestion` event: "add to denylist?").
+	// After this many client_tls_rejected on one host, later CONNECTs to it are
+	// tunneled (pinned apps keep working) and a suggestion tag is set (the
+	// recorder turns it into a `suggestion` event: "add to denylist?").
 	rejectSuggestThreshold = 3
 )
 
@@ -156,6 +157,7 @@ func (s *Server) intercept(conn net.Conn, clientAddr, target string) {
 		f.Timing.Total = time.Since(start)
 		if f.ErrorKind == ErrClientTLSRejected {
 			if n := s.countRejection(host); n >= rejectSuggestThreshold {
+				s.opts.Policy.LearnTunnel(target, "client rejected the ProxyPilot certificate (SSL pinning or CA not trusted)")
 				f.SetTag("suggestion", "ssl_denylist")
 				f.SetTag("rejections", strconv.Itoa(n))
 			}

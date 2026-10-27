@@ -280,6 +280,29 @@ func TestClientRejectsCertificate(t *testing.T) {
 	}
 }
 
+func TestRepeatedRejectionTunnelsHost(t *testing.T) {
+	_, iss, upstream, upPool := mitmSetup(t)
+	hooks := newRecHooks()
+	_, pu := startProxy(t, Options{Hooks: hooks, Issuer: iss, UpstreamTLS: &tls.Config{RootCAs: upPool}})
+
+	// A pinned app: trusts the real server, never the ProxyPilot CA.
+	pinned := func() *http.Client { return proxyClient(pu, upPool) }
+	for i := 0; i < rejectSuggestThreshold; i++ {
+		if _, err := pinned().Get(upstream.URL); err == nil {
+			t.Fatalf("request %d: expected the pinned client to reject the certificate", i)
+		}
+		hooks.wait(t)
+	}
+	resp, err := pinned().Get(upstream.URL)
+	if err != nil {
+		t.Fatalf("after %d rejections the host should be tunneled: %v", rejectSuggestThreshold, err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+}
+
 func TestUpstreamBadCertificate(t *testing.T) {
 	root, iss, upstream, _ := mitmSetup(t)
 	hooks := newRecHooks()
