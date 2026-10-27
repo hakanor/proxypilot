@@ -363,7 +363,17 @@
       "android": "Android (adb)",
       "device": "Physical device (QR)",
       "chrome": "Chrome",
-      "cli": "CLI / Node / Python"
+      "cli": "CLI / Node / Python",
+      "mcp": "Claude Code, Cursor (MCP)"
+    },
+    "mcp": {
+      "title": "AI agents (MCP)",
+      "body": "Give Claude Code, Cursor or any MCP client direct access to your traffic: list and search requests, read bodies and WebSocket messages, mock responses, set breakpoints and throttle the network. ProxyPilot must be running (this page means it is).",
+      "claudeNote": "-s user makes it available in every project. Start a new Claude Code session to load the tools.",
+      "otherTitle": "Cursor and other MCP clients",
+      "otherNote": "Add this to the client's mcpServers config. Use the full path of proxypilot if it is not on PATH. Add \"--read-only\" to the args to block rules and edits.",
+      "tryTitle": "Try it",
+      "tryBody": "Ask your agent: \"Using proxypilot, which requests failed in the last 5 minutes and why?\""
     },
     "later": "Coming in a later version.",
     "iosTitle": "iOS Simulator",
@@ -738,6 +748,7 @@
       }
     },
     "targetGroups": {
+      "agents": "AI AGENTS",
       "mobile": "MOBILE",
       "desktop": "THIS MAC"
     }

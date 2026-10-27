@@ -4,6 +4,7 @@
   import DevicePane from './DevicePane.svelte';
   import AndroidPane from './AndroidPane.svelte';
   import ChromePane from './ChromePane.svelte';
+  import McpPane from './McpPane.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import * as Card from '$lib/components/ui/card/index.js';
@@ -17,9 +18,10 @@
   }
   let { onnotice, version = 0 }: Props = $props();
 
-  type Target = 'ios' | 'mac' | 'android' | 'device' | 'chrome' | 'cli';
-  // Grouped in the side list: phones and emulators first, then this Mac.
+  type Target = 'ios' | 'mac' | 'android' | 'device' | 'chrome' | 'cli' | 'mcp';
+  // Grouped in the side list: AI agents first, then phones and emulators, then this Mac.
   const groups: { label: string; ids: Target[] }[] = [
+    { label: 'agents', ids: ['mcp'] },
     { label: 'mobile', ids: ['device', 'ios', 'android'] },
     { label: 'desktop', ids: ['mac', 'chrome', 'cli'] },
   ];
@@ -131,6 +133,8 @@
       <AndroidPane {onnotice} />
     {:else if target === 'chrome'}
       <ChromePane {version} />
+    {:else if target === 'mcp'}
+      <McpPane />
     {:else if target !== 'ios' && target !== 'mac'}
       <h1 class="mb-1 text-lg font-semibold">{t(`setup.targetList.${target}`)}</h1>
       <p class="text-muted-foreground">{t('setup.later')}</p>
