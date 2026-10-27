@@ -52,7 +52,7 @@ archives:
       - goos: windows
         formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ if eq .Arch \"all\" }}universal{{ else }}{{ .Arch }}{{ end }}"
-    files: [README.md, docs/quickstart.md, docs/security.md] # add LICENSE once the project has one
+    files: [LICENSE, README.md, docs/quickstart.md, docs/security.md]
 
 checksum:
   name_template: checksums.txt
@@ -64,21 +64,25 @@ changelog:
     exclude: ["^docs:", "^test:", "^chore:"]
 
 # brew install hakanor/tap/proxypilot  (tap repo: github.com/hakanor/homebrew-tap; token: HOMEBREW_TAP_TOKEN)
-brews:
+homebrew_casks:
   - name: proxypilot
     ids: [default]
     repository:
       owner: hakanor
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
+    directory: Casks
     homepage: https://github.com/hakanor/proxypilot
-    description: HTTP(S) and WebSocket debugging proxy with a web UI, a JSON CLI and an MCP server
-    # license: set once the project picks one
-    install: |
-      bin.install "proxypilot"
-    test: |
-      system "#{bin}/proxypilot", "version"
+    description: AI-ready HTTP(S) and WebSocket debugging proxy with an MCP server, web UI, CLI and TUI
+    license: MIT
+    binaries: [proxypilot]
+    # Unsigned builds are quarantined by Gatekeeper; harmless once notarized.
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/proxypilot"]
+          end
     caveats: |
       Start it and open the UI:
         proxypilot ui
