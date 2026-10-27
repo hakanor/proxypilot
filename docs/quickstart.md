@@ -53,7 +53,7 @@ Device details and troubleshooting: [devices.md](devices.md).
 - Mock a response: right-click a request → Tools → Map Local, edit, Save.
 - Pause and edit a request: right-click → Tools → Breakpoint.
 - Slow network: click the address pill in the toolbar → Network throttle.
-- Agents: `claude mcp add proxypilot -- proxypilot mcp --agent-name claude` ([mcp.md](mcp.md), [AGENTS.md](AGENTS.md)).
+- Agents: `claude mcp add -s user proxypilot -- proxypilot mcp --agent-name claude` ([mcp.md](mcp.md), [AGENTS.md](AGENTS.md)).
 
 ## Undo everything
 

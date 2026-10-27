@@ -17,7 +17,7 @@ func newMCPCmd(app *App) *cobra.Command {
 		Use:   "mcp",
 		Short: "Run the MCP server on stdio (for Claude Code, Cursor and other agents)",
 		Long: "Serves ProxyPilot tools over MCP on stdin/stdout. Configure it in your agent, e.g.\n" +
-			"  claude mcp add proxypilot -- proxypilot mcp --agent-name claude\n" +
+			"  claude mcp add -s user proxypilot -- proxypilot mcp --agent-name claude\n" +
 			"Rules the agent creates are owned by agent:<name> and expire after 1h by default.\n" +
 			"Secrets are always masked unless you pass --allow-secrets (agents cannot change it).",
 		Args: cobra.NoArgs,

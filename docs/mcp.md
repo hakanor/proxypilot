@@ -8,7 +8,7 @@ through the control API; start the daemon first (`proxypilot start --detach` or 
 **Claude Code**
 
 ```bash
-claude mcp add proxypilot -- proxypilot mcp --agent-name claude
+claude mcp add -s user proxypilot -- proxypilot mcp --agent-name claude
 ```
 
 **Cursor / any client with an `mcpServers` config**

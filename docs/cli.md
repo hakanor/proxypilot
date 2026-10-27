@@ -374,7 +374,7 @@ Flags:
 
 ```text
 Serves ProxyPilot tools over MCP on stdin/stdout. Configure it in your agent, e.g.
-  claude mcp add proxypilot -- proxypilot mcp --agent-name claude
+  claude mcp add -s user proxypilot -- proxypilot mcp --agent-name claude
 Rules the agent creates are owned by agent:<name> and expire after 1h by default.
 Secrets are always masked unless you pass --allow-secrets (agents cannot change it).
 

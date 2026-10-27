@@ -76,7 +76,7 @@ Every command is in [docs/cli.md](docs/cli.md); the JSON output is described in 
 ## AI agents (MCP)
 
 ```bash
-claude mcp add proxypilot -- proxypilot mcp --agent-name claude
+claude mcp add -s user proxypilot -- proxypilot mcp --agent-name claude
 ```
 
 Agents can list and search traffic, read bodies and WebSocket messages, add rules, resolve breakpoints and throttle the network. Setup: [docs/mcp.md](docs/mcp.md). How an agent should use it, with scenarios to copy into your project: [docs/AGENTS.md](docs/AGENTS.md).
