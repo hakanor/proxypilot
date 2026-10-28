@@ -239,16 +239,6 @@
     "abortKey": "abort",
     "next": "next paused"
   },
-  "actions": {
-    "copyUrl": "Copy URL",
-    "copyCurl": "Copy as cURL",
-    "repeat": "Repeat",
-    "compose": "Edit in Composer",
-    "mapLocal": "Save as Map Local",
-    "breakpoint": "Breakpoint",
-    "pin": "Pin",
-    "unpin": "Unpin"
-  },
   "viewer": {
     "tree": "Tree",
     "pretty": "Pretty",

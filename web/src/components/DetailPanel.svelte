@@ -10,9 +10,8 @@
   import { t } from '../lib/i18n';
     import { statusPill } from '../lib/status';
   import { api, APIError, type FlowDetail } from '../lib/api';
-  import { copyText, parseCookies, parseQuery, toCurl, rawHead } from '../lib/detail';
+  import { copyText, parseCookies, parseQuery, rawHead } from '../lib/detail';
   import type { Row } from '../lib/traffic.svelte';
-  import { href } from '../lib/route.svelte';
   import { cn } from '$lib/utils.js';
   import { Button } from '$lib/components/ui/button/index.js';
 
@@ -26,14 +25,10 @@
 
   interface Props {
     row: Row;
-    pinned: boolean;
-    onpin: () => void;
     onclose: () => void;
     onbypass: (host: string) => void;
-    /** Opens a rule in the editor pop-up. */
-    onrule: (id: string) => void;
   }
-  let { row, pinned, onpin, onclose, onbypass, onrule }: Props = $props();
+  let { row, onclose, onbypass }: Props = $props();
 
   type ReqTab = 'header' | 'query' | 'cookies' | 'body' | 'raw';
   type RespTab = 'header' | 'body' | 'raw' | 'hex' | 'timing' | 'graphql' | 'messages';
@@ -92,71 +87,18 @@
   async function copy(text: string) {
     flash((await copyText(text)) ? t('detail.copied') : t('detail.copyFailed'));
   }
-  async function copyCurl() {
-    // Always build from the unredacted flow: a masked token would make the command useless.
-    const f = await api.flow(row.id, false);
-    let body: string | null = null;
-    if (f.bodies.req?.decoded_size) {
-      const b = await api.body(row.id, 'req', 10 << 20, false);
-      if (b.encoding === 'utf8') body = b.data ?? null;
-    }
-    copy(toCurl(f, body));
-  }
-
-  // A request-phase breakpoint for this method and URL (any query).
-  async function addBreakpoint() {
-    try {
-      const url = row.url.split('?')[0] + '*';
-      const r = await api.addRule({
-        name: `${row.method} ${row.host}${row.path}`, type: 'breakpoint', enabled: true, owner: 'user', phase: 'request',
-        match: { url, methods: [row.method] }, spec: {}, priority: 0,
-      });
-      onrule(r.id);
-    } catch (e) {
-      flash(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function repeatNow() {
-    try {
-      const s = await api.repeat(row.id);
-      const r = s.results[0];
-      flash(t('detail.repeated', { status: r?.error ?? r?.status ?? '—' }));
-    } catch (e) {
-      flash(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function saveMapLocal() {
-    try {
-      const { rule } = await api.mapLocalFromFlow(row.id);
-      onrule(rule.id);
-    } catch (e) {
-      flash(e instanceof Error ? e.message : String(e));
-    }
-  }
-
 </script>
 
 
 <section class="relative flex h-full w-full min-h-0 flex-col border-t border-border bg-panel text-[13px]">
-  <div class="flex h-10 shrink-0 items-center gap-2 border-b border-border px-4">
+  <div class="flex min-h-10 shrink-0 items-center gap-2 border-b border-border px-4 py-1.5">
     <span class="rounded bg-muted px-1.5 py-0.5 font-mono text-[11.5px] font-semibold">{row.method}</span>
     <span class={cn('rounded px-1.5 py-0.5 font-mono text-[11.5px]', pillTone[p.cls])}>{p.label}</span>
     {#if flow?.protocol}<span class="font-mono text-[11px] text-faint" title={t('detail.protocol')}>{flow.protocol === 'HTTP/2.0' ? 'h2' : flow.protocol}</span>{/if}
     {#if pending}<span class="size-2.5 animate-spin rounded-full border-2 border-border border-t-primary" aria-label={t('detail.loading')}></span>{/if}
-    <span class="min-w-0 flex-1 truncate font-mono text-[13px]" title={flow?.tags?.original_url ? t('detail.mappedFrom', { url: flow.tags.original_url }) : row.url}>{row.url}</span>
+    <span class="min-w-0 flex-1 font-mono text-[13px] break-all select-text" title={flow?.tags?.original_url ? t('detail.mappedFrom', { url: flow.tags.original_url }) : row.url}>{row.url}</span>
     {#if flow?.tags?.rewritten}<span class="shrink-0 text-xs text-accent-foreground">{t('detail.rewritten', { phase: flow.tags.rewritten })}</span>{/if}
-    <div class="flex shrink-0 items-center gap-1">
-      <Button variant="ghost" size="xs" onclick={() => copy(row.url)}>{t('actions.copyUrl')}</Button>
-      <Button variant="ghost" size="xs" onclick={copyCurl}>{t('actions.copyCurl')}</Button>
-      <Button variant="ghost" size="xs" disabled={row.state === 'tunneled' || pending} onclick={repeatNow}>{t('actions.repeat')}</Button>
-      <Button variant="ghost" size="xs" href={href('compose', row.id)}>{t('actions.compose')}</Button>
-      <Button variant="ghost" size="xs" disabled={row.state === 'pending'} onclick={saveMapLocal}>{t('actions.mapLocal')}</Button>
-      <Button variant="ghost" size="xs" disabled={row.state === 'tunneled'} onclick={addBreakpoint}>{t('actions.breakpoint')}</Button>
-      <Button variant={pinned ? 'secondary' : 'ghost'} size="xs" class={cn(pinned && 'bg-accent text-accent-foreground')} onclick={onpin}>{pinned ? t('actions.unpin') : t('actions.pin')}</Button>
-      <Button variant="ghost" size="icon-sm" class="text-muted-foreground" aria-label={t('detail.close')} onclick={onclose}><XIcon /></Button>
-    </div>
+    <Button variant="ghost" size="icon-sm" class="shrink-0 text-muted-foreground" aria-label={t('detail.close')} onclick={onclose}><XIcon /></Button>
   </div>
 
   {#if gone}

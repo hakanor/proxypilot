@@ -514,11 +514,8 @@
         ></div>
       <DetailPanel
         row={selectedRow}
-        pinned={pinned.has(selectedRow.id)}
-        onpin={() => togglePin(selectedRow.id)}
         onclose={() => (detailOpen = false)}
         onbypass={addBypass}
-        onrule={(id) => (ruleModal = id)}
       />
       </div>
     {/if}
