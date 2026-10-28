@@ -244,7 +244,7 @@ func (s *Server) registerRead() {
 		mcp.WithNumber("max_text", mcp.Description("Characters kept per message (default 500)"), mcp.DefaultNumber(500)),
 		ro,
 	), func(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-		id, err := s.flowID(req, "id")
+		id, err := s.flowID(ctx, k, req, "id")
 		if err != nil {
 			return nil, err
 		}
@@ -345,7 +345,7 @@ func (s *Server) registerRead() {
 
 // getRequest renders one flow within the 8 KB budget.
 func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-	id, err := s.flowID(req, "id")
+	id, err := s.flowID(ctx, k, req, "id")
 	if err != nil {
 		return nil, err
 	}

@@ -218,6 +218,10 @@ func TestToolsEndToEnd(t *testing.T) {
 	if out, isErr := call(t, c, "get_request", map[string]any{"id": "ZZZZZZZZ"}); !isErr || !strings.Contains(out, "unknown request id") {
 		t.Fatalf("unknown short id: %v %s", isErr, out)
 	}
+	// A fresh MCP process (no ids shown yet) still resolves a short id.
+	if out := mustCall(t, connect(t, e.dir, mcpserver.Options{}), "get_request", map[string]any{"id": failID}); !strings.Contains(out, "/fail") {
+		t.Fatalf("short id after restart: %s", out)
+	}
 	// Big bodies are excerpts with a next offset.
 	out, _ = call(t, c, "get_request", map[string]any{"id": bigID, "max_body_bytes": 6000})
 	if !strings.Contains(out, `"more":true`) || !strings.Contains(out, "offset=6000") {

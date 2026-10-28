@@ -35,11 +35,11 @@ type diffBody struct {
 }
 
 func (s *Server) diffFlows(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-	a, err := s.flowID(req, "a")
+	a, err := s.flowID(ctx, k, req, "a")
 	if err != nil {
 		return nil, err
 	}
-	b, err := s.flowID(req, "b")
+	b, err := s.flowID(ctx, k, req, "b")
 	if err != nil {
 		return nil, err
 	}

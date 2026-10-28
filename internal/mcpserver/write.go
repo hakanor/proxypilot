@@ -210,7 +210,7 @@ func (s *Server) registerWrite() {
 		mcp.WithNumber("concurrency", mcp.Description("How many at once (1..5)"), mcp.DefaultNumber(1)),
 		mcp.WithBoolean("bypass_rules"),
 	), func(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-		id, err := s.flowID(req, "id")
+		id, err := s.flowID(ctx, k, req, "id")
 		if err != nil {
 			return nil, err
 		}

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -170,11 +171,29 @@ func clip(s string, n int) string {
 	return s[:cut] + "…"
 }
 
-// flowID reads a request id argument, short or full.
-func (s *Server) flowID(req mcp.CallToolRequest, key string) (string, error) {
+// flowID reads a request id argument, short or full. A short id this process has
+// not shown (e.g. after an MCP restart) is looked up among the latest 2000 flows.
+func (s *Server) flowID(ctx context.Context, k *conn, req mcp.CallToolRequest, key string) (string, error) {
 	id, err := req.RequireString(key)
 	if err != nil {
 		return "", err
+	}
+	if full, err := s.ids.resolve(id); err == nil {
+		return full, nil
+	}
+	q := url.Values{"limit": {"500"}}
+	for range 4 {
+		p, err := k.c.ListFlows(ctx, q)
+		if err != nil {
+			return "", err
+		}
+		for _, f := range p.Flows {
+			s.ids.short(f.ID)
+		}
+		if full, err := s.ids.resolve(id); err == nil || !p.HasMore {
+			return full, err
+		}
+		q.Set("cursor", p.NextCursor)
 	}
 	return s.ids.resolve(id)
 }
