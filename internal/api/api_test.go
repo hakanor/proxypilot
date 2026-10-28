@@ -361,3 +361,55 @@ func TestNDJSONRedacts(t *testing.T) {
 		t.Fatalf("stream leaked: %s", sc.Text())
 	}
 }
+
+func TestDiffEndpoint(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	put := func(app, token, body string) string {
+		f := &store.Flow{Method: "POST", Host: "a.test", URL: "http://a.test/v2/cart/add", Status: 200, ReqContentType: "application/json",
+			ReqHeaders: []store.Header{{Name: "Authorization", Value: "Bearer " + token}, {Name: "X-App-Version", Value: app}}}
+		e.store.Insert(ctx, f)
+		e.store.PutBody(ctx, f.ID, store.SideReq, "", int64(len(body)), func() (io.ReadCloser, error) {
+			return io.NopCloser(strings.NewReader(body)), nil
+		})
+		return f.ID
+	}
+	a := put("4.1.0", "tok-aaaaaaaa", `{"productId":123,"currency":"TRY","password":"one"}`)
+	b := put("4.2.0", "tok-bbbbbbbb", `{"productId":123,"password":"two"}`)
+
+	r := e.do(t, "GET", "/api/v1/diff?redact=true&a="+a+"&b="+b, nil, auth)
+	raw, _ := io.ReadAll(r.Body)
+	if r.StatusCode != 200 {
+		t.Fatalf("status %d: %s", r.StatusCode, raw)
+	}
+	for _, secret := range []string{"tok-aaaaaaaa", "tok-bbbbbbbb", `"one"`, `"two"`} {
+		if strings.Contains(string(raw), secret) {
+			t.Fatalf("secret %s leaked: %s", secret, raw)
+		}
+	}
+	var d struct {
+		Request struct {
+			Headers []struct{ Path, Kind, A, B string }
+			Body    struct {
+				Mode    string
+				Changes []struct{ Path, Kind string }
+			}
+		}
+	}
+	if err := json.Unmarshal(raw, &d); err != nil {
+		t.Fatal(err)
+	}
+	if d.Request.Body.Mode != "json" || len(d.Request.Body.Changes) != 1 || d.Request.Body.Changes[0].Path != "$.currency" {
+		t.Fatalf("body diff: %+v", d.Request.Body)
+	}
+	var sawVersion bool
+	for _, h := range d.Request.Headers {
+		sawVersion = sawVersion || (h.Path == "x-app-version" && h.A == "4.1.0" && h.B == "4.2.0")
+	}
+	if !sawVersion {
+		t.Fatalf("headers: %+v", d.Request.Headers)
+	}
+	if got := e.do(t, "GET", "/api/v1/diff?a="+a+"&b=nope", nil, auth).StatusCode; got != 404 {
+		t.Fatalf("missing flow: %d", got)
+	}
+}

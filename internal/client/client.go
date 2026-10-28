@@ -17,6 +17,7 @@ import (
 
 	"github.com/hakanor/proxypilot/internal/api"
 	"github.com/hakanor/proxypilot/internal/daemon"
+	"github.com/hakanor/proxypilot/internal/diff"
 	"github.com/hakanor/proxypilot/internal/store"
 )
 
@@ -195,6 +196,12 @@ func (c *Client) RawBody(ctx context.Context, id, side string) (io.ReadCloser, e
 		return nil, err
 	}
 	return resp.Body, nil
+}
+
+// Diff compares two flows (masked unless the client was created without redaction).
+func (c *Client) Diff(ctx context.Context, a, b string) (diff.Result, error) {
+	var r diff.Result
+	return r, c.getJSON(ctx, "/diff", url.Values{"a": {a}, "b": {b}}, &r)
 }
 
 func (c *Client) Summary(ctx context.Context, since string) (store.Summary, error) {

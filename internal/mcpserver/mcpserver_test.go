@@ -145,7 +145,7 @@ func TestToolsEndToEnd(t *testing.T) {
 	c := connect(t, e.dir, mcpserver.Options{Agent: "claude"})
 
 	names := toolNames(t, c)
-	for _, n := range []string{"get_status", "summarize_traffic", "list_requests", "get_request", "search_traffic", "wait_for_request",
+	for _, n := range []string{"get_status", "summarize_traffic", "list_requests", "get_request", "diff_flows", "search_traffic", "wait_for_request",
 		"add_map_local", "add_rewrite", "add_map_remote", "repeat_request", "set_breakpoint", "wait_for_breakpoint", "resume_breakpoint", "list_rules", "remove_rule", "clear_agent_rules", "clear_session"} {
 		if !names[n] {
 			t.Errorf("tool %s missing", n)
@@ -173,10 +173,13 @@ func TestToolsEndToEnd(t *testing.T) {
 	// Secrets are masked in headers and bodies.
 	out, _ = call(t, c, "list_requests", nil)
 	json.Unmarshal([]byte(out), &page)
-	var loginID, bigID string
+	var loginID, bigID, failID string
 	for _, r := range page.Requests {
 		if strings.HasSuffix(r.URL, "/login") {
 			loginID = r.ID
+		}
+		if strings.HasSuffix(r.URL, "/fail") {
+			failID = r.ID
 		}
 		if strings.HasSuffix(r.URL, "/big") {
 			bigID = r.ID
@@ -194,6 +197,17 @@ func TestToolsEndToEnd(t *testing.T) {
 	out, _ = call(t, c, "get_request", map[string]any{"id": bigID, "offset": 6000, "max_body_bytes": 100})
 	if !strings.Contains(out, `"offset":6000`) {
 		t.Fatalf("offset read: %.300s", out)
+	}
+
+	// diff_flows: only differences, secrets masked, big bodies stay under 8 KB.
+	out, isErr = call(t, c, "diff_flows", map[string]any{"a": loginID, "b": failID})
+	if isErr || !strings.Contains(out, `{"path":"status","kind":"changed","a":"200","b":"500"}`) || !strings.Contains(out, `"path":"path"`) ||
+		strings.Contains(out, "realsecrettoken987654321") || strings.Contains(out, "supersecretvalue1234567890") {
+		t.Fatalf("diff_flows: %s", out)
+	}
+	out, isErr = call(t, c, "diff_flows", map[string]any{"a": loginID, "b": bigID})
+	if isErr || len(out) > mcpserver.MaxResponse || !strings.Contains(out, "$.data") {
+		t.Fatalf("diff_flows big (%d bytes): %.400s", len(out), out)
 	}
 
 	// Map Local owned by the agent, with a TTL.

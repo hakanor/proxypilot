@@ -15,7 +15,8 @@ ProxyPilot is an HTTP(S)/WebSocket debugging proxy. The user's app traffic (iOS 
 1. `summarize_traffic {since: "10m"}` first: totals, failing endpoints grouped with the last flow id, slowest request.
 2. Then narrow down: `list_requests` with filters (`host`, `status`, `method`, `errors_only`, `since`, `gql_op`) or `search_traffic {query, in: "url"|"headers"|"body"}`.
 3. Only then open single requests with `get_request {id, body: "response"|"request"|"both"}`. Bodies are excerpts; read further with `offset` only when the excerpt is not enough. Never pull whole large bodies "just in case".
-4. WebSocket connections are requests with status 101; read their messages with `get_websocket_messages {id}` and page with `after`.
+4. To find what broke, compare a working request with a failing one: `diff_flows {a: <ok id>, b: <failing id>}` returns only the differences (headers, query parameters, JSON fields by path).
+5. WebSocket connections are requests with status 101; read their messages with `get_websocket_messages {id}` and page with `after`.
 
 **Testing an action in the app.** Call `wait_for_request {url: "*/path*", timeout_seconds: 120}` first, then ask the user to perform the action (tap the button, reload the page). The tool returns the request when it completes.
 
@@ -40,7 +41,7 @@ ProxyPilot is an HTTP(S)/WebSocket debugging proxy. The user's app traffic (iOS 
 
 1. `get_status`, then `summarize_traffic {since: "15m"}` → the failure groups show `POST /v2/checkout 500 ×3` with `last_id`.
 2. `get_request {id: <last_id>, body: "both"}` → compare the request body with the server's error message (e.g. `"currency": null`).
-3. `list_requests {host: "api.example.com", since: "15m"}` → find the earlier request that should have set the currency (e.g. `GET /v2/cart` returned it empty).
+3. `list_requests {host: "api.example.com", since: "15m"}` → find an earlier checkout that succeeded, then `diff_flows {a: <ok id>, b: <last_id>}` → e.g. `$.currency` removed and `x-app-version` 4.1.0 → 4.2.0.
 4. Optionally confirm the fix without a backend change: `add_rewrite {url: "*/v2/checkout", phase: "request", steps: [{"type": "json_set", "path": "$.currency", "value": "\"TRY\""}], ttl: "10m"}`, then `wait_for_request {url: "*/v2/checkout", timeout_seconds: 120}` while the user taps Pay.
 5. `clear_agent_rules`. Report: the failing request, the cause, the evidence, the suggested fix.
 

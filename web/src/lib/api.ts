@@ -122,6 +122,32 @@ export interface SSLPolicy {
   learned_tunnels?: Record<string, string>;
 }
 
+export interface DiffChange {
+  path: string;
+  kind: 'added' | 'removed' | 'changed';
+  a?: string;
+  b?: string;
+}
+
+export interface DiffSide {
+  line: DiffChange[] | null;
+  headers: DiffChange[] | null;
+  body: {
+    mode: 'same' | 'json' | 'text' | 'binary' | 'empty';
+    changes?: DiffChange[];
+    lines?: { op: ' ' | '-' | '+' | '…'; text?: string }[];
+    truncated?: boolean;
+  };
+}
+
+export interface FlowDiff {
+  a: { id: string; method: string; url: string; status?: number };
+  b: { id: string; method: string; url: string; status?: number };
+  same: boolean;
+  request: DiffSide;
+  response: DiffSide;
+}
+
 export interface Simulator {
   udid: string;
   name: string;
@@ -486,6 +512,7 @@ export const api = {
   sslPolicy: () => call<SSLPolicy>('GET', '/ssl-policy'),
   setSSLPolicy: (p: SSLPolicy) =>
     call<SSLPolicy>('PUT', '/ssl-policy', { mode: p.mode, allowlist: p.allowlist, denylist: p.denylist }),
+  diff: (a: string, b: string) => call<FlowDiff>('GET', `/diff?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
   forgetTunnel: (host: string) => call<SSLPolicy>('DELETE', `/ssl-policy/learned/${encodeURIComponent(host)}`),
 };
 

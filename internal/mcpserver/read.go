@@ -175,6 +175,8 @@ func (s *Server) registerRead() {
 		ro,
 	), s.getRequest)
 
+	s.registerDiff(ro)
+
 	s.add(mcp.NewTool("get_websocket_messages",
 		mcp.WithDescription("Messages of a WebSocket connection (a request with status 101), oldest first: direction (up = app → server, down = server → app), type, size and text. Page with after = the previous result's next."),
 		mcp.WithString("id", mcp.Required(), mcp.Description("The WebSocket request id")),

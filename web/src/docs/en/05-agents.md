@@ -12,7 +12,7 @@ Agents use ProxyPilot through the MCP server or the CLI with `--json`.
 claude mcp add -s user proxypilot -- proxypilot mcp --agent-name claude
 ```
 
-Other clients (Cursor, etc.) take the same command in their `mcpServers` config. Tools: `summarize_traffic`, `list_requests`, `get_request`, `search_traffic`, `wait_for_request`, `add_map_local`, `add_rewrite`, `add_map_remote`, `repeat_request`, `set_breakpoint`, `wait_for_breakpoint`, `resume_breakpoint`, `list_rules`, `remove_rule`, `clear_agent_rules`, `clear_session`, `get_status`.
+Other clients (Cursor, etc.) take the same command in their `mcpServers` config. Tools: `summarize_traffic`, `list_requests`, `get_request`, `diff_flows`, `search_traffic`, `wait_for_request`, `add_map_local`, `add_rewrite`, `add_map_remote`, `repeat_request`, `set_breakpoint`, `wait_for_breakpoint`, `resume_breakpoint`, `list_rules`, `remove_rule`, `clear_agent_rules`, `clear_session`, `get_status`.
 
 - Every answer stays under 8 KB; bodies are excerpts you can page with `offset`.
 - Rules an agent creates belong to `agent:<name>`, expire after 1h by default, and cannot touch your rules.

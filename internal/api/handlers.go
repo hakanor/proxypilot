@@ -30,6 +30,7 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/flows/{id}/body/{side}", s.handleBody)
 	mux.HandleFunc("GET /api/v1/flows/{id}/messages", s.handleMessages)
 	mux.HandleFunc("GET /api/v1/summary", s.handleSummary)
+	mux.HandleFunc("GET /api/v1/diff", s.handleDiff)
 	mux.HandleFunc("GET /api/v1/ssl-policy", s.handleGetPolicy)
 	mux.HandleFunc("PUT /api/v1/ssl-policy", s.handlePutPolicy)
 	mux.HandleFunc("DELETE /api/v1/ssl-policy/learned/{host}", s.handleForgetTunnel)

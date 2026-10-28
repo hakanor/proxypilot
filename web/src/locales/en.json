@@ -2,6 +2,24 @@
   "app": {
     "name": "ProxyPilot"
   },
+  "diff": {
+    "title": "Compare {a} → {b}",
+    "loading": "Comparing…",
+    "same": "The two requests are identical (headers, bodies and status).",
+    "request": "Request",
+    "response": "Response",
+    "line": "Method, URL and status",
+    "headers": "Headers",
+    "body": "Body",
+    "changes": "{n} differences",
+    "noChanges": "no differences",
+    "truncated": "Only the first part of a large body was compared.",
+    "kinds": {
+      "added": "only in the second request",
+      "removed": "only in the first request",
+      "changed": "different"
+    }
+  },
   "ssl": {
     "title": "SSL list",
     "body": "Mode: {mode}. Decrypted hosts show full requests; tunneled hosts show only the host, timing and size, and the app keeps working.",
@@ -1040,6 +1058,9 @@
     "persisted": "Persisted query (only a hash was sent)"
   },
   "menu": {
+    "compareMark": "Select for compare",
+    "compareWith": "Compare with #{n}",
+    "compareMarked": "#{n} selected. Right-click another request and choose \"Compare with #{n}\".",
     "copyUrl": "Copy URL",
     "copyCurl": "Copy as cURL",
     "repeat": "Repeat",

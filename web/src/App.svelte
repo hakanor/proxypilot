@@ -28,6 +28,7 @@
   import UninstallPage from './pages/UninstallPage.svelte';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
   import SSLListDialog from './components/SSLListDialog.svelte';
+  import DiffDialog from './components/DiffDialog.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
 
   const store = (k: string, v?: string) => {
@@ -44,6 +45,9 @@
   let status = $state<Status | null>(null);
   let ssl = $state<SSLPolicy | null>(null);
   let sslListOpen = $state(false);
+  // Compare: the first request picked from the context menu, then the open dialog.
+  let compareBase = $state<string | null>(null);
+  let compare = $state<{ a: string; b: string; labels: [string, string] } | null>(null);
   let conn = $state<StreamState>({ kind: 'connecting' });
   let notice = $state<string | null>(null);
   let ruleVersion = $state(0);
@@ -318,11 +322,22 @@
         return t('menu.done', { action: t(phase === 'request' ? 'menu.breakpointReq' : 'menu.breakpointResp'), name: rule.name });
       });
     const newRule = (type: string) => (ruleModal = `new~${type}~${pattern}`);
+    const first = compareBase && compareBase !== id ? traffic.get(compareBase) : undefined;
+    const compareItem: Item = first
+      ? {
+          label: t('menu.compareWith', { n: first.n }), sep: true, disabled: tunnel,
+          action: () => {
+            compare = { a: first.id, b: id, labels: [`#${first.n}`, `#${r.n}`] };
+            compareBase = null;
+          },
+        }
+      : { label: t('menu.compareMark'), sep: true, disabled: tunnel, action: () => ((compareBase = id), (notice = t('menu.compareMarked', { n: r.n }))) };
     return [
       { label: t('menu.copyUrl'), action: () => act(async () => ((await copyText(r.url)) ? t('menu.copied') : undefined)) },
       { label: t('menu.copyCurl'), disabled: tunnel, action: () => act(async () => ((await copyText((await api.curl(id)).curl)) ? t('menu.copied') : undefined)) },
       { label: t('menu.repeat'), sep: true, disabled: tunnel, action: () => act(async () => { const s = await api.repeat(id); return t('detail.repeated', { status: s.results[0]?.status ?? '—' }); }) },
       { label: t('menu.compose'), disabled: tunnel, action: () => (location.hash = href('compose', id)) },
+      compareItem,
       {
         label: t('menu.tools'), sep: true, disabled: tunnel,
         children: [
@@ -520,6 +535,9 @@
         <BreakpointsPage modal version={bpVersion} focusId={bpModal} onnotice={(m) => (notice = m)} onclose={() => (bpModal = null)} />
       </Dialog.Content>
     </Dialog.Root>
+  {/if}
+  {#if compare}
+    <DiffDialog a={compare.a} b={compare.b} labels={compare.labels} onclose={() => (compare = null)} />
   {/if}
   {#if sslListOpen && ssl}
     <SSLListDialog {ssl} onchange={(p) => (ssl = p)} onclose={() => (sslListOpen = false)} />

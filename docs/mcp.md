@@ -39,6 +39,7 @@ Use the absolute path of the binary if it is not on `PATH`. A custom data direct
 | `list_requests` | | Compact rows, filter by host / method / status / type / errors / since / gql_op; default 20 |
 | `search_traffic` | | Text in URL, headers or body |
 | `get_request` | | Timing, headers and a body excerpt (`max_body_bytes`, `offset` to read on) |
+| `diff_flows` | | What changed from request `a` to `b`: method, URL parts, each query parameter, headers, status, bodies (JSON by path, text by line). Only differences |
 | `wait_for_request` | | Wait for a matching flow to complete (`timeout_seconds` 1–300, optional `since_seconds`) |
 | `get_websocket_messages` | | Messages of a WebSocket connection (status 101): direction, type, size, text; page with `after` |
 | `list_rules` | | All rules, marking yours |

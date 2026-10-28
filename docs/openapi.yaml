@@ -240,6 +240,17 @@ paths:
       responses:
         "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Body" } } } }
         "404": { $ref: "#/components/responses/Error" }
+  /diff:
+    get:
+      summary: What changed from flow a to flow b (request line, query, headers, status, bodies)
+      parameters:
+        - { name: a, in: query, required: true, schema: { type: string } }
+        - { name: b, in: query, required: true, schema: { type: string } }
+        - { name: redact, in: query, schema: { type: boolean } }
+      responses:
+        "200": { description: "Only differences: JSON bodies by path, text bodies by line" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
   /summary:
     get:
       summary: Aggregate statistics
