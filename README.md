@@ -4,7 +4,13 @@
 
 <h1 align="center">ProxyPilot</h1>
 
-<p align="center">An HTTP(S) and WebSocket debugging proxy in a single Go binary. Humans use the built-in web UI, scripts use a <code>--json</code> CLI, and AI agents use MCP.</p>
+<p align="center">An AI-ready HTTP(S) and WebSocket debugging proxy in a single Go binary. AI agents read and change traffic over MCP, humans use the built-in web UI, and scripts use a <code>--json</code> CLI.</p>
+
+<p align="center"><code>brew install hakanor/tap/proxypilot</code></p>
+
+<p align="center">
+  <img src="docs/images/screenshot.png" width="100%" alt="ProxyPilot web UI: live traffic table, sidebar by app and domain, and the request and response of a selected POST as JSON trees">
+</p>
 
 ---
 
