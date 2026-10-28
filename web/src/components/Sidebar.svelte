@@ -270,13 +270,13 @@
         {@render section(t('sidebar.simulators'))}
         {#each sims as n (n.key)}{@render nodeRow(n, 0)}{/each}
       {/if}
-      {#if mac}
-        {@render section(t('sidebar.thisMac'))}
-        {#each mac.children as n (n.key)}{@render nodeRow(n, 0)}{/each}
-      {/if}
       {#if others.length}
         {@render section(t('sidebar.devices'))}
         {#each others as n (n.key)}{@render nodeRow(n, 0)}{/each}
+      {/if}
+      {#if mac}
+        {@render section(t('sidebar.thisMac'))}
+        {#each mac.children as n (n.key)}{@render nodeRow(n, 0)}{/each}
       {/if}
       {#if shownDomains.length}
         {@render section(t('sidebar.domains'))}

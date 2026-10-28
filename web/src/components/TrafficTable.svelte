@@ -55,46 +55,47 @@
     { key: 'size', label: 'table.size', num: true },
   ];
 
-  // Column widths in px (the URL column always takes the rest). Drag a header edge to
-  // resize, double-click it to reset; kept per browser in localStorage.
-  const DEFAULT_W: Partial<Record<SortKey, number>> = { n: 52, client: 170, method: 72, status: 64, at: 92, duration: 80, size: 80 };
-  const MIN_W = 24;
+  // Column widths in px. Columns open at their minimum width and the URL column takes the
+  // rest. Dragging a divider resizes only the column to its left; the columns to its right
+  // keep their widths and move with it (like Proxyman). Double-click a divider to reset.
+  const MIN_W: Partial<Record<SortKey, number>> = { n: 40, url: 120, client: 110, method: 60, status: 52, at: 72, duration: 68, size: 64 };
   let widths = $state<Partial<Record<SortKey, number>>>(loadWidths());
   function loadWidths(): Partial<Record<SortKey, number>> {
     try {
-      return JSON.parse(localStorage.getItem('pp.cols.v3') ?? '{}');
+      return JSON.parse(localStorage.getItem('pp.cols.v4') ?? '{}');
     } catch {
       return {};
     }
   }
   function saveWidths() {
     try {
-      localStorage.setItem('pp.cols.v3', JSON.stringify(widths));
+      localStorage.setItem('pp.cols.v4', JSON.stringify(widths));
     } catch {
       /* private mode */
     }
   }
   const custom = $derived(Object.keys(widths).length > 0);
+  // A set URL width is a maximum, so the URL column still gives way when the window narrows.
   const colsCSS = $derived(
-    cols.map((c) => (c.key === 'url' ? 'minmax(60px, 1fr)' : `${widths[c.key] ?? DEFAULT_W[c.key]}px`)).join(' ') + ' 18px',
+    cols
+      .map((c) => (c.key === 'url' ? (widths.url ? `minmax(${MIN_W.url}px, ${widths.url}px)` : 'minmax(60px, 1fr)') : `${widths[c.key] ?? MIN_W[c.key]}px`))
+      .join(' ') + ' minmax(18px, 1fr)',
   );
-  // Each divider sits between column i and i+1 and follows the pointer: the two neighbours trade
-  // width (the flexible URL column just absorbs its side). Any column can shrink down to MIN_W.
-  const w = (k: SortKey) => widths[k] ?? DEFAULT_W[k] ?? 80;
   function startResize(e: PointerEvent, i: number) {
     e.preventDefault();
     e.stopPropagation();
-    const [a, b] = [cols[i].key, cols[i + 1].key];
+    const row = (e.currentTarget as HTMLElement).closest('.row') as HTMLElement;
+    const cells = [...row.children] as HTMLElement[];
+    // Freeze every column at its rendered width so only the dragged one changes.
+    const frozen: Partial<Record<SortKey, number>> = {};
+    cols.forEach((c, ci) => (frozen[c.key] = Math.round(cells[ci].getBoundingClientRect().width)));
+    const key = cols[i].key;
+    const w0 = frozen[key]!;
+    const free = Math.max(0, Math.round(cells[cells.length - 1].getBoundingClientRect().width) - 18);
     const x0 = e.clientX;
-    const [wa, wb] = [w(a), w(b)];
     const move = (ev: PointerEvent) => {
-      let dx = Math.round(ev.clientX - x0);
-      if (a !== 'url') dx = Math.max(dx, MIN_W - wa);
-      if (b !== 'url') dx = Math.min(dx, wb - MIN_W);
-      const next = { ...widths };
-      if (a !== 'url') next[a] = wa + dx;
-      if (b !== 'url') next[b] = wb - dx;
-      widths = next;
+      const dx = Math.min(Math.round(ev.clientX - x0), free);
+      widths = { ...frozen, [key]: Math.max(MIN_W[key] ?? 24, w0 + dx) };
     };
     const up = () => {
       window.removeEventListener('pointermove', move);
@@ -106,8 +107,8 @@
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
   }
-  function resetPair(i: number) {
-    const { [cols[i].key]: _a, [cols[i + 1].key]: _b, ...rest } = widths;
+  function resetCol(i: number) {
+    const { [cols[i].key]: _, ...rest } = widths;
     widths = rest;
     saveWidths();
   }
@@ -197,7 +198,7 @@
           class="absolute top-1 -right-[13px] bottom-1 z-[1] w-3 cursor-col-resize after:absolute after:inset-y-[6px] after:left-1/2 after:w-px after:-translate-x-1/2 after:rounded-full after:bg-faint/35 after:transition-all hover:after:inset-y-0 hover:after:w-[3px] hover:after:bg-primary"
           title={t('table.resize')}
           onpointerdown={(e) => startResize(e, ci)}
-          ondblclick={() => resetPair(ci)}
+          ondblclick={() => resetCol(ci)}
         ></span>
       {/if}
       </div>
@@ -274,7 +275,7 @@
   }
   .row {
     display: grid;
-    grid-template-columns: var(--cols, 52px minmax(160px, 1fr) 170px 72px 64px 92px 80px 80px 18px);
+    grid-template-columns: var(--cols, 40px minmax(120px, 1fr) 110px 60px 52px 72px 68px 64px 18px);
     column-gap: 14px; /* resize grips sit centred in this gap */
     align-items: center;
     padding: 0 16px;
@@ -288,7 +289,7 @@
   /* Narrow (detail panel open): drop Size, then Client. */
   @container (max-width: 760px) {
     .row {
-      grid-template-columns: var(--cols, 48px minmax(120px, 1fr) 140px 66px 60px 84px 74px 0 18px);
+      grid-template-columns: var(--cols, 40px minmax(120px, 1fr) 110px 60px 52px 72px 68px 0 18px);
     }
     .ttable:not([style*="--cols"]) .row > :nth-child(8) {
       visibility: hidden;
@@ -296,7 +297,7 @@
   }
   @container (max-width: 600px) {
     .row {
-      grid-template-columns: var(--cols, 42px minmax(100px, 1fr) 0 60px 56px 76px 66px 0 14px);
+      grid-template-columns: var(--cols, 40px minmax(100px, 1fr) 0 60px 52px 72px 68px 0 14px);
     }
     .ttable:not([style*="--cols"]) .row > :nth-child(3),
     .ttable:not([style*="--cols"]) .row > :nth-child(8) {
