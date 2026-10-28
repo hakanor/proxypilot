@@ -32,13 +32,15 @@ Use the absolute path of the binary if it is not on `PATH`. A custom data direct
 
 ## Tools
 
+Request ids are short (the last 8 characters of the full id); both forms are accepted.
+
 | Tool | Writes | Purpose |
 |---|---|---|
 | `get_status` | | Daemon, proxy, rules, paused breakpoints, who you are |
 | `summarize_traffic` | | Start here: totals, failure groups (with last flow id), slowest request |
-| `list_requests` | | Compact rows, filter by host / method / status / type / errors / since / gql_op; default 20 |
+| `list_requests` | | One text line per request (`id method status ms size type time url`), repeats folded into `×N` (`group: false` to keep them); filter by host / method / status / type / errors / since / gql_op; default 20 |
 | `search_traffic` | | Text in URL, headers or body |
-| `get_request` | | Timing, headers and a body excerpt (`max_body_bytes`, `offset` to read on) |
+| `get_request` | | Timing, headers and a body excerpt (`max_body_bytes`, `offset` to read on, `path` like `$.items[0]` for one part of a JSON body). Noise headers (date, server, CSP, sec-ch-*…) are hidden unless `all_headers` |
 | `diff_flows` | | What changed from request `a` to `b`: method, URL parts, each query parameter, headers, status, bodies (JSON by path, text by line). Only differences |
 | `wait_for_request` | | Wait for a matching flow to complete (`timeout_seconds` 1–300, optional `since_seconds`) |
 | `get_websocket_messages` | | Messages of a WebSocket connection (status 101): direction, type, size, text; page with `after` |
@@ -69,7 +71,7 @@ Use the absolute path of the binary if it is not on `PATH`. A custom data direct
 ## Example session
 
 1. `summarize_traffic {since: "10m"}`: `POST /v2/checkout 500 ×3, last_id 01M5…`
-2. `get_request {id: "01M5…", body: "both"}`: request body and the server's error message
+2. `get_request {id: "9S0T1U2V", body: "both"}`: request body and the server's error message
 3. `add_map_local {url: "https://api.example.com/v2/checkout", methods: ["POST"], status: 200, body: "{\"ok\":true}", ttl: "15m"}`
 4. `wait_for_request {url: "*/v2/checkout", timeout_seconds: 120}` while the user taps Pay
 5. `clear_agent_rules` when done

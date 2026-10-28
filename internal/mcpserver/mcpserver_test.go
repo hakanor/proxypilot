@@ -127,6 +127,20 @@ func call(t *testing.T, c *mcpclient.Client, name string, args map[string]any) (
 	return text, res.IsError
 }
 
+// lines splits a list_requests answer into rows of fields (url is field 7).
+func lines(t *testing.T, out string) [][]string {
+	t.Helper()
+	var p struct{ Requests []string }
+	if err := json.Unmarshal([]byte(out), &p); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	var rows [][]string
+	for _, l := range p.Requests {
+		rows = append(rows, strings.Fields(l))
+	}
+	return rows
+}
+
 func toolNames(t *testing.T, c *mcpclient.Client) map[string]bool {
 	t.Helper()
 	res, err := c.ListTools(context.Background(), mcp.ListToolsRequest{})
@@ -162,32 +176,47 @@ func TestToolsEndToEnd(t *testing.T) {
 		t.Fatalf("summary: %s", out)
 	}
 	out, _ = call(t, c, "list_requests", map[string]any{"status": "5xx"})
-	var page struct {
-		Requests []struct{ ID, URL string }
-	}
-	json.Unmarshal([]byte(out), &page)
-	if len(page.Requests) != 1 || !strings.HasSuffix(page.Requests[0].URL, "/fail") {
+	if rows := lines(t, out); len(rows) != 1 || !strings.HasSuffix(rows[0][7], "/fail") || rows[0][2] != "500" {
 		t.Fatalf("list 5xx: %s", out)
 	}
 
-	// Secrets are masked in headers and bodies.
+	// Rows are compact lines with short ids.
 	out, _ = call(t, c, "list_requests", nil)
-	json.Unmarshal([]byte(out), &page)
 	var loginID, bigID, failID string
-	for _, r := range page.Requests {
-		if strings.HasSuffix(r.URL, "/login") {
-			loginID = r.ID
+	for _, r := range lines(t, out) {
+		if len(r[0]) != 8 {
+			t.Fatalf("id not short: %q", r[0])
 		}
-		if strings.HasSuffix(r.URL, "/fail") {
-			failID = r.ID
-		}
-		if strings.HasSuffix(r.URL, "/big") {
-			bigID = r.ID
+		switch {
+		case strings.HasSuffix(r[7], "/login"):
+			loginID = r[0]
+		case strings.HasSuffix(r[7], "/fail"):
+			failID = r[0]
+		case strings.HasSuffix(r[7], "/big"):
+			bigID = r[0]
 		}
 	}
+	// Secrets are masked in headers and bodies; noise headers are hidden.
 	out, _ = call(t, c, "get_request", map[string]any{"id": loginID})
 	if strings.Contains(out, "realsecrettoken987654321") || strings.Contains(out, "supersecretvalue1234567890") || !strings.Contains(out, "redacted") || !strings.Contains(out, "hakan") {
 		t.Fatalf("get_request redaction: %s", out)
+	}
+	if strings.Contains(out, `"Date"`) || !strings.Contains(out, `"hidden_headers"`) {
+		t.Fatalf("noise headers not hidden: %s", out)
+	}
+	if out, _ = call(t, c, "get_request", map[string]any{"id": loginID, "all_headers": true}); !strings.Contains(out, `"Date"`) {
+		t.Fatalf("all_headers: %s", out)
+	}
+	// path picks one part of a JSON body.
+	out, _ = call(t, c, "get_request", map[string]any{"id": loginID, "path": "$.user"})
+	if !strings.Contains(out, `"text":"\"hakan\""`) {
+		t.Fatalf("path: %s", out)
+	}
+	if out, _ = call(t, c, "get_request", map[string]any{"id": loginID, "path": "$.nope"}); !strings.Contains(out, "no such key") {
+		t.Fatalf("bad path: %s", out)
+	}
+	if out, isErr := call(t, c, "get_request", map[string]any{"id": "ZZZZZZZZ"}); !isErr || !strings.Contains(out, "unknown request id") {
+		t.Fatalf("unknown short id: %v %s", isErr, out)
 	}
 	// Big bodies are excerpts with a next offset.
 	out, _ = call(t, c, "get_request", map[string]any{"id": bigID, "max_body_bytes": 6000})
@@ -287,6 +316,28 @@ func TestToolsEndToEnd(t *testing.T) {
 	if out, isErr := call(t, c, "wait_for_request", map[string]any{"url": "x", "timeout_seconds": 999}); !isErr {
 		t.Fatalf("timeout bound not enforced: %s", out)
 	}
+
+	// Polling repeats fold into one ×N line unless group=false.
+	for range 3 {
+		e.get(t, "/poll")
+	}
+	time.Sleep(200 * time.Millisecond)
+	out, _ = call(t, c, "search_traffic", map[string]any{"query": "/poll"})
+	if rows := lines(t, out); len(rows) != 1 || rows[0][len(rows[0])-1] != "×3" || !strings.Contains(out, `"grouped":2`) {
+		t.Fatalf("grouping: %s", out)
+	}
+	if rows := lines(t, mustCall(t, c, "list_requests", map[string]any{"group": false, "host": "127.0.0.1*"})); len(rows) < 3 {
+		t.Fatalf("group=false: %v", rows)
+	}
+}
+
+func mustCall(t *testing.T, c *mcpclient.Client, name string, args map[string]any) string {
+	t.Helper()
+	out, isErr := call(t, c, name, args)
+	if isErr {
+		t.Fatalf("%s: %s", name, out)
+	}
+	return out
 }
 
 func TestReadOnlyAndNoDaemon(t *testing.T) {

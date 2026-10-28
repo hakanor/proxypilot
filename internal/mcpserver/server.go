@@ -37,6 +37,7 @@ type Server struct {
 
 	mu   sync.Mutex
 	conn *conn
+	ids  ids
 }
 
 // conn is a pair of API clients: c masks secrets (unless --allow-secrets); raw never
@@ -75,7 +76,7 @@ const instructions = `ProxyPilot is an HTTP(S)/WebSocket debugging proxy. Use it
 
 Recommended flow:
 1. summarize_traffic first: it groups failures and names the slowest request, so you rarely need the full list.
-2. list_requests / search_traffic to find a flow, then get_request for headers and a body excerpt (use offset to read more).
+2. list_requests / search_traffic to find a flow (one line each; ids are short), then get_request. For big JSON bodies pass path (e.g. $.items[0]) instead of reading it all.
 3. To check a change: wait_for_request (start it, trigger the action in the app, it returns the flow).
 4. To mock: add_map_local. To edit traffic: add_rewrite. To point at another server: add_map_remote. To intercept: set_breakpoint, wait_for_breakpoint, resume_breakpoint.
 
@@ -167,6 +168,15 @@ func clip(s string, n int) string {
 		cut--
 	}
 	return s[:cut] + "…"
+}
+
+// flowID reads a request id argument, short or full.
+func (s *Server) flowID(req mcp.CallToolRequest, key string) (string, error) {
+	id, err := req.RequireString(key)
+	if err != nil {
+		return "", err
+	}
+	return s.ids.resolve(id)
 }
 
 func errorf(format string, a ...any) error { return fmt.Errorf(format, a...) }

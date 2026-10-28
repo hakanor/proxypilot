@@ -14,7 +14,7 @@ ProxyPilot is an HTTP(S)/WebSocket debugging proxy. The user's app traffic (iOS 
 **Read before you fetch.**
 1. `summarize_traffic {since: "10m"}` first: totals, failing endpoints grouped with the last flow id, slowest request.
 2. Then narrow down: `list_requests` with filters (`host`, `status`, `method`, `errors_only`, `since`, `gql_op`) or `search_traffic {query, in: "url"|"headers"|"body"}`.
-3. Only then open single requests with `get_request {id, body: "response"|"request"|"both"}`. Bodies are excerpts; read further with `offset` only when the excerpt is not enough. Never pull whole large bodies "just in case".
+3. Only then open single requests with `get_request {id, body: "response"|"request"|"both"}`. Bodies are excerpts; for a big JSON body ask for just the part you need with `path` (e.g. `$.items[0]`), and read further with `offset` only when that is not enough. Never pull whole large bodies "just in case".
 4. To find what broke, compare a working request with a failing one: `diff_flows {a: <ok id>, b: <failing id>}` returns only the differences (headers, query parameters, JSON fields by path).
 5. WebSocket connections are requests with status 101; read their messages with `get_websocket_messages {id}` and page with `after`.
 

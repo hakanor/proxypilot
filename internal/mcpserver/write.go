@@ -198,7 +198,7 @@ func (s *Server) registerWrite() {
 	})
 
 	s.add(mcp.NewTool("repeat_request",
-		mcp.WithDescription("Send a recorded request again through the proxy (rules apply unless bypass_rules), optionally edited. Returns new flow ids with status and time; inspect them with get_request."),
+		mcp.WithDescription("Send a recorded request again, optionally edited (rules apply unless bypass_rules). Returns the new ids with status and time."),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Flow id to repeat")),
 		mcp.WithObject("set_headers", mcp.Description("{name: value} to set")),
 		mcp.WithArray("remove_headers", mcp.WithStringItems()),
@@ -210,7 +210,7 @@ func (s *Server) registerWrite() {
 		mcp.WithNumber("concurrency", mcp.Description("How many at once (1..5)"), mcp.DefaultNumber(1)),
 		mcp.WithBoolean("bypass_rules"),
 	), func(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-		id, err := req.RequireString("id")
+		id, err := s.flowID(req, "id")
 		if err != nil {
 			return nil, err
 		}
@@ -244,11 +244,14 @@ func (s *Server) registerWrite() {
 		if err != nil {
 			return nil, err
 		}
+		for i := range sum.Results {
+			sum.Results[i].FlowID = s.ids.short(sum.Results[i].FlowID)
+		}
 		return sum, nil
 	})
 
 	s.add(mcp.NewTool("set_breakpoint",
-		mcp.WithDescription("Pause matching requests (before the server) or responses (before the app). Then use wait_for_breakpoint and resume_breakpoint. Paused flows continue unchanged after timeout."),
+		mcp.WithDescription("Pause matching requests (before the server) or responses (before the app); then wait_for_breakpoint and resume_breakpoint. Unanswered flows continue after timeout."),
 		mcp.WithString("url", mcp.Required(), mcp.Description("URL pattern with * wildcards")),
 		mcp.WithString("phase", mcp.Enum("request", "response", "both"), mcp.DefaultString("request")),
 		mcp.WithArray("methods", mcp.WithStringItems()),
@@ -278,7 +281,7 @@ func (s *Server) registerWrite() {
 	})
 
 	s.add(mcp.NewTool("resume_breakpoint",
-		mcp.WithDescription("Decide on a flow paused by your breakpoint: continue unchanged, continue with edits, or abort. Edits apply to the request in the request phase and to the response in the response phase."),
+		mcp.WithDescription("Continue, edit (modify) or abort a flow paused by your breakpoint. Edits apply to the paused phase (request or response)."),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Breakpoint id (bp_…)")),
 		mcp.WithString("action", mcp.Required(), mcp.Enum("continue", "modify", "abort")),
 		mcp.WithNumber("status", mcp.Description("Response phase: new status code")),
@@ -319,7 +322,7 @@ func (s *Server) registerWrite() {
 	})
 
 	s.add(mcp.NewTool("set_throttle",
-		mcp.WithDescription("Simulate a slow network for the user's traffic: every matching request waits the profile's latency, then bodies flow at its bandwidth. Use it to reproduce timeouts, spinners and slow-loading bugs; turn it off (enabled=false) when you are done, since it affects everyone using the proxy."),
+		mcp.WithDescription("Simulate a slow network (latency, then limited bandwidth) to reproduce timeouts and slow-loading bugs. Affects everyone using the proxy: set enabled=false when done."),
 		mcp.WithBoolean("enabled", mcp.Required()),
 		mcp.WithString("profile", mcp.Enum("edge", "3g", "lte", "bad-wifi", "custom"), mcp.Description("Preset; custom uses down_kbps, up_kbps, latency_ms")),
 		mcp.WithNumber("down_kbps", mcp.Description("custom: download kbit/s (0 = unlimited)")),
@@ -359,7 +362,7 @@ func (s *Server) pausedOut(p *breakpoints.Paused) map[string]any {
 		return m
 	}
 	out := map[string]any{
-		"id": p.ID, "flow_id": p.FlowID, "phase": p.Phase, "rule": p.RuleName, "owner": p.Owner,
+		"id": p.ID, "flow_id": s.ids.short(p.FlowID), "phase": p.Phase, "rule": p.RuleName, "owner": p.Owner,
 		"seconds_left": int(time.Until(p.ExpiresAt).Seconds()), "on_timeout": p.OnTimeout,
 		"request": map[string]any{"method": p.Request.Method, "url": clip(p.Request.URL, 300), "headers": hdrs(p.Request.Headers), "body": clip(p.Request.Body, 2000)},
 	}

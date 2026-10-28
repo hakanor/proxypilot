@@ -136,3 +136,33 @@ func jsonRemove(doc any, segs []pathSeg) any {
 	}
 	return obj
 }
+
+// JSONGet returns the value at path ($ alone is the whole document).
+func JSONGet(doc any, path string) (any, error) {
+	if strings.TrimSpace(path) == "$" {
+		return doc, nil
+	}
+	segs, err := parsePath(path)
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range segs {
+		switch d := doc.(type) {
+		case []any:
+			i := idx(s.index, len(d))
+			if !s.isIdx || i < 0 || i >= len(d) {
+				return nil, fmt.Errorf("%s: no such element", path)
+			}
+			doc = d[i]
+		case map[string]any:
+			v, ok := d[s.key]
+			if s.isIdx || !ok {
+				return nil, fmt.Errorf("%s: no such key", path)
+			}
+			doc = v
+		default:
+			return nil, fmt.Errorf("%s: no such path", path)
+		}
+	}
+	return doc, nil
+}

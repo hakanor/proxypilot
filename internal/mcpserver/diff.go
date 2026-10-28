@@ -35,11 +35,11 @@ type diffBody struct {
 }
 
 func (s *Server) diffFlows(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-	a, err := req.RequireString("a")
+	a, err := s.flowID(req, "a")
 	if err != nil {
 		return nil, err
 	}
-	b, err := req.RequireString("b")
+	b, err := s.flowID(req, "b")
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +48,7 @@ func (s *Server) diffFlows(ctx context.Context, k *conn, req mcp.CallToolRequest
 		return nil, err
 	}
 	d.A.URL, d.B.URL = clip(d.A.URL, 180), clip(d.B.URL, 180)
+	d.A.ID, d.B.ID = s.ids.short(d.A.ID), s.ids.short(d.B.ID)
 	return map[string]any{
 		"a": d.A, "b": d.B, "same": d.Same,
 		"request": compactSide(d.Request), "response": compactSide(d.Response),

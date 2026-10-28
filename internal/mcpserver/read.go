@@ -2,7 +2,9 @@ package mcpserver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -10,38 +12,58 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 
+	"github.com/hakanor/proxypilot/internal/api"
 	"github.com/hakanor/proxypilot/internal/client"
+	"github.com/hakanor/proxypilot/internal/rules"
 	"github.com/hakanor/proxypilot/internal/store"
 )
 
-// row is the compact flow shape used in lists.
-type row struct {
-	ID       string   `json:"id"`
-	Method   string   `json:"method"`
-	URL      string   `json:"url"`
-	Status   int      `json:"status,omitempty"`
-	State    string   `json:"state"`
-	Error    string   `json:"error,omitempty"`
-	Ms       int      `json:"ms"`
-	Size     int64    `json:"size"`
-	Client   string   `json:"client,omitempty"`
-	Rules    []string `json:"rules,omitempty"`
-	GQL      string   `json:"graphql,omitempty"` // "mutation Like"
-	At       string   `json:"at"`
-	Response string   `json:"type,omitempty"`
-}
+// rowFormat names the fields of a list line, once per page.
+const rowFormat = "id method status ms size type time url [×N repeats] [state= err= client= rules= gql=]"
 
-func toRow(f *store.Flow) row {
+// line renders a flow as one compact text line: about 60% fewer tokens than a JSON object.
+func (s *Server) line(f *store.Flow) string {
 	size := f.RespSize
 	if size == 0 {
 		size = f.BytesDown
 	}
-	return row{
-		ID: f.ID, Method: f.Method, URL: clip(f.URL, 180), Status: f.Status, State: f.State, Error: f.ErrorKind,
-		Ms: int(f.Timing.Total), Size: size, Client: f.ClientLabel, Rules: f.MatchedRules,
-		At: f.CreatedAt.Format(time.TimeOnly), Response: shortType(f.RespContentType),
-		GQL: strings.TrimSpace(f.Tags["gql_type"] + " " + f.Tags["gql_op"]),
+	status := "-"
+	if f.Status != 0 {
+		status = strconv.Itoa(f.Status)
 	}
+	typ := shortType(f.RespContentType)
+	if typ == "" {
+		typ = "-"
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s %s %s %dms %s %s %s %s", s.ids.short(f.ID), f.Method, status, int(f.Timing.Total), bytesStr(size), typ,
+		f.CreatedAt.Format(time.TimeOnly), clip(f.URL, 180))
+	if f.State != store.StateCompleted {
+		b.WriteString(" state=" + f.State)
+	}
+	if f.ErrorKind != "" {
+		b.WriteString(" err=" + f.ErrorKind)
+	}
+	if f.ClientLabel != "" {
+		b.WriteString(" client=" + strings.ReplaceAll(f.ClientLabel, " ", "_"))
+	}
+	if len(f.MatchedRules) > 0 {
+		b.WriteString(" rules=" + strings.Join(f.MatchedRules, ","))
+	}
+	if g := strings.TrimSpace(f.Tags["gql_type"] + " " + f.Tags["gql_op"]); g != "" {
+		b.WriteString(" gql=" + strings.ReplaceAll(g, " ", ":"))
+	}
+	return b.String()
+}
+
+func bytesStr(n int64) string {
+	switch {
+	case n < 1000:
+		return strconv.FormatInt(n, 10) + "B"
+	case n < 1_000_000:
+		return strconv.FormatFloat(float64(n)/1e3, 'f', 1, 64) + "K"
+	}
+	return strconv.FormatFloat(float64(n)/1e6, 'f', 1, 64) + "M"
 }
 
 func shortType(ct string) string {
@@ -54,24 +76,33 @@ func shortType(ct string) string {
 }
 
 type page struct {
-	Requests   []row  `json:"requests"`
-	Count      int    `json:"count"`
-	More       bool   `json:"more"`
-	NextCursor string `json:"next_cursor,omitempty"`
-	Hint       string `json:"hint,omitempty"`
+	Format     string   `json:"format"`
+	Requests   []string `json:"requests"`
+	Count      int      `json:"count"`
+	Grouped    int      `json:"grouped,omitempty"` // repeats folded into a ×N line
+	More       bool     `json:"more"`
+	NextCursor string   `json:"next_cursor,omitempty"`
+	Hint       string   `json:"hint,omitempty"`
 }
 
-func (s *Server) list(ctx context.Context, k *conn, q url.Values) (page, error) {
+func (s *Server) list(ctx context.Context, k *conn, q url.Values, group bool) (page, error) {
 	p, err := k.c.ListFlows(ctx, q)
 	if err != nil {
 		return page{}, err
 	}
-	rows := make([]row, len(p.Flows))
-	for i, f := range p.Flows {
-		rows[i] = toRow(f)
+	flows, repeats := p.Flows, make([]int, len(p.Flows))
+	if group {
+		flows, repeats = groupRepeats(p.Flows)
 	}
-	kept, cut := fit(rows, MaxResponse-400)
-	out := page{Requests: kept, Count: len(kept), More: p.HasMore || cut, NextCursor: p.NextCursor}
+	lines := make([]string, len(flows))
+	for i, f := range flows {
+		lines[i] = s.line(f)
+		if repeats[i] > 1 {
+			lines[i] += " ×" + strconv.Itoa(repeats[i])
+		}
+	}
+	kept, cut := fit(lines, MaxResponse-400)
+	out := page{Format: rowFormat, Requests: kept, Count: len(kept), Grouped: len(p.Flows) - len(flows), More: p.HasMore || cut, NextCursor: p.NextCursor}
 	if cut {
 		out.NextCursor = ""
 		out.Hint = "list was cut to fit 8 KB; use a smaller limit or a filter"
@@ -79,6 +110,25 @@ func (s *Server) list(ctx context.Context, k *conn, q url.Values) (page, error) 
 		out.Hint = "pass next_cursor as cursor for older requests"
 	}
 	return out, nil
+}
+
+// groupRepeats folds requests with the same method, URL, status and error (polling)
+// into their newest one and counts them.
+func groupRepeats(flows []*store.Flow) ([]*store.Flow, []int) {
+	var out []*store.Flow
+	var counts []int
+	at := map[string]int{}
+	for _, f := range flows {
+		key := f.Method + " " + f.URL + " " + strconv.Itoa(f.Status) + " " + f.ErrorKind
+		if i, ok := at[key]; ok {
+			counts[i]++
+			continue
+		}
+		at[key] = len(out)
+		out = append(out, f)
+		counts = append(counts, 1)
+	}
+	return out, counts
 }
 
 func (s *Server) registerRead() {
@@ -112,6 +162,12 @@ func (s *Server) registerRead() {
 		if err != nil {
 			return nil, err
 		}
+		for i := range sum.Failures {
+			sum.Failures[i].LastID = s.ids.short(sum.Failures[i].LastID)
+		}
+		if sum.Slowest != nil {
+			sum.Slowest.ID = s.ids.short(sum.Slowest.ID)
+		}
 		failures, cut := fit(sum.Failures, 4000)
 		hosts, _ := fit(sum.TopHosts, 1500)
 		out := map[string]any{
@@ -126,7 +182,7 @@ func (s *Server) registerRead() {
 	})
 
 	s.add(mcp.NewTool("list_requests",
-		mcp.WithDescription("Recent requests, newest first, as compact rows. Filter rather than paging through everything."),
+		mcp.WithDescription("Recent requests, newest first, one text line each (see format). Filter rather than paging."),
 		mcp.WithNumber("limit", mcp.Description("Max rows (default 20, max 100)"), mcp.DefaultNumber(20)),
 		mcp.WithString("host", mcp.Description("Host, wildcards allowed: *.example.com")),
 		mcp.WithString("method", mcp.Description("GET, POST… comma separated")),
@@ -136,6 +192,7 @@ func (s *Server) registerRead() {
 		mcp.WithString("since", mcp.Description(`Only newer than, e.g. "10m"`)),
 		mcp.WithString("gql_op", mcp.Description("GraphQL operation name")),
 		mcp.WithString("cursor", mcp.Description("next_cursor from a previous call")),
+		mcp.WithBoolean("group", mcp.Description("Fold repeats (same method, URL, status) into one ×N line"), mcp.DefaultBool(true)),
 		ro,
 	), func(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
 		q := url.Values{}
@@ -148,7 +205,7 @@ func (s *Server) registerRead() {
 		if req.GetBool("errors_only", false) {
 			q.Set("has_error", "true")
 		}
-		return s.list(ctx, k, q)
+		return s.list(ctx, k, q, req.GetBool("group", true))
 	})
 
 	s.add(mcp.NewTool("search_traffic",
@@ -163,29 +220,31 @@ func (s *Server) registerRead() {
 			return nil, err
 		}
 		q := url.Values{"q": {text}, "in": {req.GetString("in", "url")}, "limit": {strconv.Itoa(min(max(req.GetInt("limit", 20), 1), 100))}}
-		return s.list(ctx, k, q)
+		return s.list(ctx, k, q, true)
 	})
 
 	s.add(mcp.NewTool("get_request",
-		mcp.WithDescription("One request in detail: timing, headers, and a body excerpt. Bodies are decoded (gzip/br) text; read further with offset."),
+		mcp.WithDescription("One request: timing, headers and a decoded body excerpt. Use path to pick part of a JSON body, offset to read on."),
 		mcp.WithString("id", mcp.Required()),
 		mcp.WithString("body", mcp.Description("Which body to include"), mcp.Enum("response", "request", "both", "none"), mcp.DefaultString("response")),
 		mcp.WithNumber("max_body_bytes", mcp.Description("Body excerpt size (default 2048, max 6000)"), mcp.DefaultNumber(2048)),
 		mcp.WithNumber("offset", mcp.Description("Start of the excerpt in the body, for reading the rest"), mcp.DefaultNumber(0)),
+		mcp.WithString("path", mcp.Description("JSON body: return only this part, e.g. $.items[0] or $.user.plan")),
+		mcp.WithBoolean("all_headers", mcp.Description("Also show noise headers (date, server, CSP, sec-ch-*…), hidden by default")),
 		ro,
 	), s.getRequest)
 
 	s.registerDiff(ro)
 
 	s.add(mcp.NewTool("get_websocket_messages",
-		mcp.WithDescription("Messages of a WebSocket connection (a request with status 101), oldest first: direction (up = app → server, down = server → app), type, size and text. Page with after = the previous result's next."),
+		mcp.WithDescription("Messages of a WebSocket (status 101) request, oldest first. dir up = app → server, down = server → app. Page with after = previous next."),
 		mcp.WithString("id", mcp.Required(), mcp.Description("The WebSocket request id")),
 		mcp.WithNumber("after", mcp.Description("Return messages after this seq"), mcp.DefaultNumber(0)),
 		mcp.WithNumber("limit", mcp.Description("Max messages (default 50, max 200)"), mcp.DefaultNumber(50)),
 		mcp.WithNumber("max_text", mcp.Description("Characters kept per message (default 500)"), mcp.DefaultNumber(500)),
 		ro,
 	), func(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-		id, err := req.RequireString("id")
+		id, err := s.flowID(req, "id")
 		if err != nil {
 			return nil, err
 		}
@@ -241,7 +300,7 @@ func (s *Server) registerRead() {
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{"matched": true, "request": toRow(&d.Flow), "hint": "call get_request with this id for headers and body"}, nil
+		return map[string]any{"matched": true, "request": s.line(&d.Flow), "hint": "call get_request with this id for headers and body"}, nil
 	})
 
 	s.add(mcp.NewTool("list_rules",
@@ -276,7 +335,7 @@ func (s *Server) registerRead() {
 	})
 
 	s.add(mcp.NewTool("wait_for_breakpoint",
-		mcp.WithDescription("Block until a flow is paused by one of your breakpoints, then return it (request or response, with body excerpt) so you can resume_breakpoint."),
+		mcp.WithDescription("Block until one of your breakpoints pauses a flow, then return it for resume_breakpoint."),
 		mcp.WithNumber("timeout_seconds", mcp.Required(), mcp.Description("1..300")),
 		mcp.WithString("url", mcp.Description("URL substring or * pattern")),
 		mcp.WithString("phase", mcp.Enum("request", "response")),
@@ -286,7 +345,7 @@ func (s *Server) registerRead() {
 
 // getRequest renders one flow within the 8 KB budget.
 func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
-	id, err := req.RequireString("id")
+	id, err := s.flowID(req, "id")
 	if err != nil {
 		return nil, err
 	}
@@ -296,9 +355,14 @@ func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolReques
 	}
 	maxBody := min(max(req.GetInt("max_body_bytes", 2048), 64), 6000)
 	offset := max(req.GetInt("offset", 0), 0)
+	all, hidden := req.GetBool("all_headers", false), 0
 	headers := func(hs []store.Header) map[string]string {
 		m := map[string]string{}
 		for _, h := range hs {
+			if !all && noisyHeader(h.Name) {
+				hidden++
+				continue
+			}
 			v := clip(h.Value, 300)
 			if old, ok := m[h.Name]; ok {
 				v = old + ", " + v
@@ -308,7 +372,7 @@ func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolReques
 		return m
 	}
 	out := map[string]any{
-		"request": toRow(&d.Flow),
+		"request": s.line(&d.Flow),
 		"timing_ms": map[string]int{
 			"dns": int(d.Timing.DNS), "connect": int(d.Timing.Connect), "tls": int(d.Timing.TLS), "ttfb": int(d.Timing.TTFB), "total": int(d.Timing.Total),
 		},
@@ -316,9 +380,13 @@ func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolReques
 		"request_headers":  headers(d.ReqHeaders),
 		"response_headers": headers(d.RespHeaders),
 	}
+	if hidden > 0 {
+		out["hidden_headers"] = hidden
+	}
 	if d.ErrorMsg != "" {
 		out["error_message"] = clip(d.ErrorMsg, 400)
 	}
+	path := req.GetString("path", "")
 	which := req.GetString("body", "response")
 	sides := map[string][]string{"response": {"resp"}, "request": {"req"}, "both": {"req", "resp"}}[which]
 	per := maxBody
@@ -326,11 +394,23 @@ func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolReques
 		per = maxBody / 2
 	}
 	for _, side := range sides {
-		b, err := k.c.GetBody(ctx, id, side, int64(offset+per))
+		limit := int64(offset + per)
+		if path != "" {
+			limit = pathBodyMax
+		}
+		b, err := k.c.GetBody(ctx, id, side, limit)
 		if err != nil {
 			return nil, err
 		}
 		key := map[string]string{"req": "request_body", "resp": "response_body"}[side]
+		if path != "" && b.Size > 0 && b.Encoding != "base64" {
+			sel, err := selectJSON(b, path)
+			if err != nil {
+				out[key] = map[string]any{"size": b.Size, "error": err.Error()}
+				continue
+			}
+			b.Data, b.Size = sel, int64(len(sel))
+		}
 		if b.Size == 0 {
 			out[key] = map[string]any{"size": 0}
 			continue
@@ -352,6 +432,9 @@ func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolReques
 			}
 			data = clip(data, per)
 			body["offset"], body["text"] = offset, data
+			if path != "" {
+				body["path"] = path
+			}
 			if end := offset + len(data); int64(end) < b.Size {
 				body["more"] = true
 				body["hint"] = "call again with offset=" + strconv.Itoa(end) + " to read on"
@@ -366,4 +449,40 @@ func (s *Server) getRequest(ctx context.Context, k *conn, req mcp.CallToolReques
 		}
 	}
 	return out, nil
+}
+
+// pathBodyMax caps how much of a body is parsed to select a JSON path.
+const pathBodyMax = 1 << 20
+
+// selectJSON returns the compact JSON at path in a body.
+func selectJSON(b api.BodyResponse, path string) (string, error) {
+	if b.Truncated {
+		return "", errorf("body over 1 MB; read it with offset instead of path")
+	}
+	var doc any
+	if err := json.Unmarshal([]byte(b.Data), &doc); err != nil {
+		return "", errorf("body is not JSON; drop path")
+	}
+	v, err := rules.JSONGet(doc, path)
+	if err != nil {
+		return "", err
+	}
+	out, err := json.Marshal(v)
+	return string(out), err
+}
+
+// noisyHeader is a header that rarely helps debugging; get_request hides these
+// unless all_headers is set.
+func noisyHeader(name string) bool {
+	n := strings.ToLower(name)
+	switch n {
+	case "date", "server", "etag", "last-modified", "age", "vary", "via", "accept-ranges", "connection", "keep-alive",
+		"alt-svc", "strict-transport-security", "content-security-policy", "content-security-policy-report-only",
+		"x-content-type-options", "x-frame-options", "x-xss-protection", "referrer-policy", "permissions-policy",
+		"report-to", "reporting-endpoints", "nel", "expect-ct", "cross-origin-opener-policy", "cross-origin-embedder-policy",
+		"cross-origin-resource-policy", "x-cache", "x-cache-hits", "x-served-by", "x-timer", "cf-ray", "cf-cache-status",
+		"accept-encoding", "accept-language", "upgrade-insecure-requests", "priority", "dnt", "pragma":
+		return true
+	}
+	return strings.HasPrefix(n, "sec-ch-") || strings.HasPrefix(n, "sec-fetch-") || strings.HasPrefix(n, "x-amz-cf-")
 }
