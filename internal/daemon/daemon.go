@@ -138,7 +138,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	d.Repeater = &repeat.Repeater{Store: d.Store, Hooks: hooks, Bypass: proxy.Chain{d.Clients, rec}}
 	d.API = api.New(api.Deps{
 		Store: d.Store, Bus: d.Bus, CA: d.CA, Policy: d.Policy, SavePolicy: d.saveSSLPolicy, Token: d.Token, Log: log,
-		Status: d.status, Version: version.Version, Recorder: rec, Rules: d.Rules, Breakpoints: d.Breakpoints, Clients: d.Clients, Repeater: d.Repeater, Chrome: d.Chrome, DataDir: cfg.DataDir, Devices: devs, AppIcon: icons.PNG, NoCache: noCacheSwitch{d}, Throttle: throttleSwitch{d},
+		Settings: newSettings(cfg.DataDir, cfg.Store.MaxDiskMB, d.Store, rec), Status: d.status, Version: version.Version, Recorder: rec, Rules: d.Rules, Breakpoints: d.Breakpoints, Clients: d.Clients, Repeater: d.Repeater, Chrome: d.Chrome, DataDir: cfg.DataDir, Devices: devs, AppIcon: icons.PNG, NoCache: noCacheSwitch{d}, Throttle: throttleSwitch{d},
 		Redact: redact.New(cfg.Redact.Headers...),
 	}, api.Options{Addr: cfg.API.Listen, UnsafeRemote: opts.UnsafeRemoteAPI})
 	if err := d.API.Listen(); err != nil {

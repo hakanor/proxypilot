@@ -173,6 +173,26 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
 paths:
+  /pins:
+    get:
+      summary: Ids of pinned flows (kept by retention until cleared)
+      responses: {'200': {description: OK}}
+  /flows/{id}/pin:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string}}
+    put:
+      summary: Pin a flow
+      responses: {'204': {description: Pinned}, '404': {description: No such flow}}
+    delete:
+      summary: Unpin a flow
+      responses: {'204': {description: Unpinned}}
+  /settings:
+    get:
+      summary: Disk limit and recording filter
+      responses: {'200': {description: OK}}
+    put:
+      summary: Change and persist the disk limit and recording filter
+      responses: {'200': {description: OK}, '400': {description: Invalid value}}
   /status:
     get:
       summary: Daemon status

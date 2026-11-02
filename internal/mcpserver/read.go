@@ -236,6 +236,12 @@ func (s *Server) registerRead() {
 
 	s.registerDiff(ro)
 
+	s.add(mcp.NewTool("export_har",
+		mcp.WithDescription("Save requests as a HAR file with secrets masked, to share with a teammate. Returns the file path."),
+		mcp.WithArray("ids", mcp.Required(), mcp.WithStringItems(), mcp.Description("Request ids")),
+		ro,
+	), s.exportHAR)
+
 	s.add(mcp.NewTool("get_websocket_messages",
 		mcp.WithDescription("Messages of a WebSocket (status 101) request, oldest first. dir up = app → server, down = server → app. Page with after = previous next."),
 		mcp.WithString("id", mcp.Required(), mcp.Description("The WebSocket request id")),

@@ -1,10 +1,10 @@
 // Hash routes: #/ (traffic), #/rules/<id>, #/setup, #/docs/<slug>, #/uninstall.
-export type Page = 'traffic' | 'compose' | 'rules' | 'breakpoints' | 'setup' | 'docs' | 'uninstall';
+export type Page = 'traffic' | 'compose' | 'rules' | 'breakpoints' | 'setup' | 'settings' | 'docs' | 'uninstall';
 
 function read(): { page: Page; sub: string } {
   const [, page = '', sub = ''] = location.hash.replace(/^#/, '').split('/');
   if (page === 'flow') return { page: 'traffic', sub: decodeURIComponent(sub) }; // #/flow/<id> opens a flow
-  const p = (['compose', 'rules', 'breakpoints', 'setup', 'docs', 'uninstall'] as const).find((x) => x === page) ?? 'traffic';
+  const p = (['compose', 'rules', 'breakpoints', 'setup', 'settings', 'docs', 'uninstall'] as const).find((x) => x === page) ?? 'traffic';
   return { page: p, sub: decodeURIComponent(sub) };
 }
 

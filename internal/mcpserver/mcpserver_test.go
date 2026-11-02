@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -241,6 +242,20 @@ func TestToolsEndToEnd(t *testing.T) {
 	out, isErr = call(t, c, "diff_flows", map[string]any{"a": loginID, "b": bigID})
 	if isErr || len(out) > mcpserver.MaxResponse || !strings.Contains(out, "$.data") {
 		t.Fatalf("diff_flows big (%d bytes): %.400s", len(out), out)
+	}
+
+	// export_har writes a masked file to the temp folder.
+	out = mustCall(t, c, "export_har", map[string]any{"ids": []any{loginID}})
+	var exp struct{ File string }
+	json.Unmarshal([]byte(out), &exp)
+	har, err := os.ReadFile(exp.File)
+	if err != nil || !strings.Contains(string(har), "/login") || strings.Contains(string(har), "realsecrettoken987654321") {
+		t.Fatalf("export_har: %v %.300s", err, har)
+	}
+	os.Remove(exp.File)
+	prompts, err := c.ListPrompts(context.Background(), mcp.ListPromptsRequest{})
+	if err != nil || len(prompts.Prompts) != 3 {
+		t.Fatalf("prompts: %v %+v", err, prompts)
 	}
 
 	// Map Local owned by the agent, with a TTL.

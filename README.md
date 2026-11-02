@@ -26,6 +26,8 @@ Capture, inspect and change traffic from iOS simulators and devices, Android emu
   - Detail panel with headers, body (JSON tree, hex), timing and GraphQL.
 - **Rules:** Map Local, Map Remote, Rewrite (headers, query, body, JSON fields, status, URL) and Breakpoints. Rules can also be added from the right-click Tools menu on any request.
 - **Breakpoints:** A paused request opens in a pop-up. You can edit it as a form, as raw HTTP or as JSON, then continue, abort or execute the edited version.
+- **Scripts:** A Rewrite step can run sandboxed JavaScript to edit headers, body, status or URL.
+- **Record only:** Limit recording to chosen hosts or apps, from Settings or the right-click menu.
 - **Compare:** Diff two requests side by side: query parameters, headers, status and JSON fields by path. Agents get the same as the `diff_flows` MCP tool.
 - **Compose and Repeat:** Paste a cURL command or start from a recorded flow. Requests can be repeated N times with a set concurrency.
 - **Setup helpers:**

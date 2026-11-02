@@ -19,6 +19,7 @@
   import CirclePause from '@lucide/svelte/icons/circle-pause';
   import Wrench from '@lucide/svelte/icons/wrench';
   import BookOpen from '@lucide/svelte/icons/book-open';
+  import Settings from '@lucide/svelte/icons/settings';
   import { href, type Page } from '../lib/route.svelte';
   import { formatCount } from '../lib/format';
   import { isError } from '../lib/filter';
@@ -46,6 +47,7 @@
     { page: 'rules', icon: SlidersHorizontal },
     { page: 'breakpoints', icon: CirclePause },
     { page: 'setup', icon: Wrench },
+    { page: 'settings', icon: Settings },
     { page: 'docs', icon: BookOpen },
   ];
   // Picking a device, app or domain from another page jumps back to Traffic.

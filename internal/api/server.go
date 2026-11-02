@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/hakanor/proxypilot/internal/capture"
 	"github.com/hakanor/proxypilot/internal/cdp"
 
 	"github.com/hakanor/proxypilot/internal/repeat"
@@ -72,8 +73,19 @@ type Deps struct {
 	}
 	// AppIcon renders a client app's icon as PNG (nil or error: 404, the UI falls back).
 	AppIcon func(app string) ([]byte, error)
+	// Settings reads and changes what the Settings page edits (nil: not available).
+	Settings interface {
+		Settings() Settings
+		SetSettings(Settings) error
+	}
 	Redact  *redact.Redactor // nil = redact.Default
 	Version string
+}
+
+// Settings is GET and PUT /api/v1/settings.
+type Settings struct {
+	MaxDiskMB int            `json:"max_disk_mb"` // 0 = unlimited
+	Capture   capture.Filter `json:"capture"`
 }
 
 type Options struct {

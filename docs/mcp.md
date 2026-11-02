@@ -32,6 +32,8 @@ Use the absolute path of the binary if it is not on `PATH`. A custom data direct
 
 ## Tools
 
+Prompts (slash commands in clients that support them): `investigate_failure`, `mock_endpoint`, `check_change`.
+
 Request ids are short (the last 8 characters of the full id); both forms are accepted.
 
 | Tool | Writes | Purpose |
@@ -42,6 +44,7 @@ Request ids are short (the last 8 characters of the full id); both forms are acc
 | `search_traffic` | | Text in URL, headers or body |
 | `get_request` | | Timing, headers and a body excerpt (`max_body_bytes`, `offset` to read on, `path` like `$.items[0]` for one part of a JSON body). Noise headers (date, server, CSP, sec-ch-*…) are hidden unless `all_headers` |
 | `diff_flows` | | What changed from request `a` to `b`: method, URL parts, each query parameter, headers, status, bodies (JSON by path, text by line). Only differences |
+| `export_har` | | Save requests as a HAR file with secrets masked, returns the path |
 | `wait_for_request` | | Wait for a matching flow to complete (`timeout_seconds` 1–300, optional `since_seconds`) |
 | `get_websocket_messages` | | Messages of a WebSocket connection (status 101): direction, type, size, text; page with `after` |
 | `list_rules` | | All rules, marking yours |

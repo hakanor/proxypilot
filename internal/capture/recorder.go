@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +37,36 @@ type Recorder struct {
 	wsSeq    sync.Map // proxy flow id → *atomic.Int64, next WebSocket message seq
 	skipped  sync.Map // flows started while recording was paused
 	paused   atomic.Bool
+	filter   atomic.Pointer[Filter]
+}
+
+// Filter limits recording to matching hosts or apps. Empty records everything.
+type Filter struct {
+	Hosts []string `json:"hosts"` // exact or wildcard: api.example.com, *.example.com
+	Apps  []string `json:"apps"`  // app names as shown in the sidebar
+}
+
+// SetFilter replaces the recording filter.
+func (r *Recorder) SetFilter(f Filter) { r.filter.Store(&f) }
+
+// wanted reports whether the filter lets a labelled flow be recorded. The Composer and Repeat always record.
+func (r *Recorder) wanted(sf *store.Flow) bool {
+	f := r.filter.Load()
+	if f == nil || sf.Source != store.SourceProxy || (len(f.Hosts) == 0 && len(f.Apps) == 0) {
+		return true
+	}
+	host := strings.ToLower(sf.Host)
+	for _, h := range f.Hosts {
+		if ok, _ := path.Match(strings.ToLower(h), host); ok {
+			return true
+		}
+	}
+	for _, a := range f.Apps {
+		if strings.EqualFold(a, sf.Tags["app"]) {
+			return true
+		}
+	}
+	return false
 }
 
 // Recording reports whether new flows are being recorded.
@@ -69,7 +100,7 @@ const MaxWSMessages = 50000
 
 // OnMessage stores one WebSocket message and announces it (without the payload).
 func (r *Recorder) OnMessage(f *proxy.Flow, m proxy.WSMessage) {
-	if r.paused.Load() {
+	if _, skipped := r.skipped.Load(f.ID); skipped || r.paused.Load() {
 		return
 	}
 	v, _ := r.wsSeq.LoadOrStore(f.ID, new(atomic.Int64))
@@ -102,6 +133,10 @@ func (r *Recorder) OnRequest(f *proxy.Flow) proxy.Decision {
 		return proxy.Decision{}
 	}
 	sf := r.label(toStore(f, store.StatePending), f)
+	if !r.wanted(sf) {
+		r.skipped.Store(f.ID, struct{}{})
+		return proxy.Decision{}
+	}
 	if err := r.Store.Insert(context.Background(), sf); err != nil {
 		r.Log.Warn("store insert failed", "flow", f.ID, "err", err)
 		return proxy.Decision{}

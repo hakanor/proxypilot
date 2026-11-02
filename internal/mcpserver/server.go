@@ -92,9 +92,11 @@ func New(dial Dialer, o Options) *Server {
 	s := &Server{dial: dial, opts: o, owner: "agent:" + o.Agent}
 	s.mcp = server.NewMCPServer("proxypilot", version.Version,
 		server.WithToolCapabilities(false),
+		server.WithPromptCapabilities(false),
 		server.WithInstructions(instructions),
 	)
 	s.registerRead()
+	s.registerPrompts()
 	if !o.ReadOnly {
 		s.registerWrite()
 	}

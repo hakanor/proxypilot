@@ -449,6 +449,11 @@ function upload(file: File, onProgress: (p: number) => void): Promise<{ session:
   });
 }
 
+export interface Settings {
+  max_disk_mb: number;
+  capture: { hosts: string[] | null; apps: string[] | null };
+}
+
 export const api = {
   exportFile: (kind: 'har' | 'session', ids: string[] | null, redact: boolean) =>
     ids ? download(`/export/${kind}`, { ids, redact }, `proxypilot.${kind === 'har' ? 'har' : 'proxypilot'}`)
@@ -510,6 +515,8 @@ export const api = {
   toggleRule: (id: string, enabled: boolean) => call<Rule>('POST', `/rules/${encodeURIComponent(id)}/toggle`, { enabled }),
   clearRules: (owner: string) => call<{ deleted: number }>('DELETE', `/rules?owner=${encodeURIComponent(owner)}`),
   mapLocalFromFlow: (id: string) => call<{ rule: Rule; file: string }>('POST', `/flows/${encodeURIComponent(id)}/map-local`, {}),
+  settings: () => call<Settings>('GET', '/settings'),
+  setSettings: (s: Settings) => call<Settings>('PUT', '/settings', s),
   pins: () => call<{ ids: string[] }>('GET', '/pins'),
   setPin: (id: string, on: boolean) => call<void>(on ? 'PUT' : 'DELETE', `/flows/${id}/pin`),
   sslPolicy: () => call<SSLPolicy>('GET', '/ssl-policy'),

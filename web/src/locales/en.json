@@ -383,7 +383,8 @@
     "uninstall": "Uninstall",
     "rules": "Rules",
     "breakpoints": "Breakpoints",
-    "compose": "Compose"
+    "compose": "Compose",
+    "settings": "Settings"
   },
   "setup": {
     "targets": "TARGETS",
@@ -928,7 +929,8 @@
       "json_remove": "Remove JSON field",
       "set_status": "Set status",
       "set_url": "Set URL",
-      "set_path": "Set path"
+      "set_path": "Set path",
+      "script": "Script (JavaScript)"
     },
     "stepFields": {
       "name": "Name",
@@ -938,7 +940,8 @@
       "regex": "Regex",
       "path": "JSON path ($.user.isPremium)",
       "jsonValue": "Value (JSON: true, 3, \"text\")",
-      "status": "Status"
+      "status": "Status",
+      "script": "msg.body = msg.body.replace(\"free\", \"pro\")  // msg: headers, body, status or url"
     },
     "rwHint": "Compressed bodies are decoded first; the edited body is sent without compression.",
     "byAgent": "Created by an AI agent; it expires automatically",
@@ -1068,7 +1071,10 @@
     "bypass": "Bypass SSL for {host}",
     "done": "{action}: {name}",
     "copied": "Copied",
-    "blocked": "Blocked {url}"
+    "blocked": "Blocked {url}",
+    "recordOnlyHost": "Record only {host}",
+    "recordOnlyApp": "Record only {app}",
+    "recordOnlyDone": "Recording filter updated. Clear it in Settings."
   },
   "typeStrip": {
     "all": "All",
@@ -1097,5 +1103,23 @@
     "copy": "Copy",
     "empty": "No messages yet.",
     "noMatch": "No message matches."
+  },
+  "settings": {
+    "title": "Settings",
+    "disk": "Disk limit",
+    "diskHint": "Oldest recordings are removed beyond this size. Pinned requests stay. 0 means no limit.",
+    "mb": "MB",
+    "record": "Record only",
+    "recordHint": "Leave both empty to record everything. Requests that match neither list are not saved. They still pass through the proxy.",
+    "hosts": "Hosts, one per line (*.example.com)",
+    "apps": "Apps, one per line",
+    "save": "Save",
+    "saved": "Saved",
+    "block": "Block list",
+    "blockHint": "Matching requests get a 403 without reaching the server.",
+    "blockPlaceholder": "ads.example.com",
+    "add": "Add",
+    "remove": "Remove",
+    "noBlocks": "Nothing blocked."
   }
 }

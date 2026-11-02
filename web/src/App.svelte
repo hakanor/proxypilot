@@ -19,12 +19,14 @@
   import type { Item } from './lib/menu';
   import { nextSort, sortRows, type SortKey } from './lib/sort';
   import { copyText } from './lib/detail';
+  import { appOf } from './lib/view';
   import SetupPage from './pages/SetupPage.svelte';
   import RulesPage from './pages/RulesPage.svelte';
   import { sendNotification } from './lib/notify.svelte';
   import BreakpointsPage from './pages/BreakpointsPage.svelte';
   import ComposePage from './pages/ComposePage.svelte';
   import DocsPage from './pages/DocsPage.svelte';
+  import SettingsPage from './pages/SettingsPage.svelte';
   import UninstallPage from './pages/UninstallPage.svelte';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
   import SSLListDialog from './components/SSLListDialog.svelte';
@@ -372,9 +374,20 @@
         ],
       },
       { label: pinned.has(id) ? t('menu.unpin') : t('menu.pin'), sep: true, action: () => togglePin(id) },
+      { label: t('menu.recordOnlyHost', { host: r.host }), action: () => act(async () => recordOnly({ hosts: [r.host] })) },
+      { label: t('menu.recordOnlyApp', { app: appOf(r) }), action: () => act(async () => recordOnly({ apps: [appOf(r)] })) },
       { label: t('menu.filterHost', { host: r.host }), action: () => (query = `host:${r.host}`) },
       { label: t('menu.bypass', { host: r.host }), action: () => act(async () => addBypass(r.host)) },
     ];
+  }
+
+  // Adds to the recording filter; Settings shows and clears it.
+  async function recordOnly(add: { hosts?: string[]; apps?: string[] }) {
+    const st = await api.settings();
+    const hosts = [...new Set([...(st.capture.hosts ?? []), ...(add.hosts ?? [])])];
+    const apps = [...new Set([...(st.capture.apps ?? []), ...(add.apps ?? [])])];
+    await api.setSettings({ ...st, capture: { hosts, apps } });
+    return t('menu.recordOnlyDone');
   }
 
   function togglePin(id: string) {
@@ -475,6 +488,8 @@
     <RulesPage selectedId={route.current.sub} version={ruleVersion} onnotice={(m) => (notice = m)} />
   {:else if route.current.page === 'setup'}
     <SetupPage onnotice={(m) => (notice = m)} version={deviceVersion} />
+  {:else if route.current.page === 'settings'}
+    <SettingsPage />
   {:else if route.current.page === 'docs'}
     <DocsPage slug={route.current.sub} {status} />
   {:else if route.current.page === 'uninstall'}

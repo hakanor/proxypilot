@@ -183,6 +183,20 @@ func (c *Client) GetBody(ctx context.Context, id, side string, max int64) (api.B
 	return b, c.getJSON(ctx, "/flows/"+url.PathEscape(id)+"/body/"+side, q, &b)
 }
 
+// ExportHAR returns the flows as a HAR file with secrets masked.
+func (c *Client) ExportHAR(ctx context.Context, ids []string) ([]byte, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/export/har", url.Values{"ids": {strings.Join(ids, ",")}}, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.send(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
 // RawBody streams the full decoded body (never redacted: it is the exact payload).
 func (c *Client) RawBody(ctx context.Context, id, side string) (io.ReadCloser, error) {
 	plain := *c

@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dop251/goja"
+
 	"github.com/hakanor/proxypilot/internal/store"
 )
 
@@ -27,6 +29,7 @@ const (
 	StepSetStatus    = "set_status"    // status (response)
 	StepSetURL       = "set_url"       // value (request, same scheme allowed to change)
 	StepSetPath      = "set_path"      // value (request)
+	StepScript       = "script"        // value: JavaScript editing msg (see script.go)
 )
 
 type Step struct {
@@ -40,6 +43,7 @@ type Step struct {
 
 	re   *regexp.Regexp
 	segs []pathSeg
+	prog *goja.Program
 	val  any
 }
 
@@ -92,6 +96,12 @@ func parseRewrite(raw json.RawMessage, phase Phase) (*RewriteSpec, error) {
 					s.val = s.Value // not JSON: a string
 				}
 			}
+		case StepScript:
+			prog, err := compileScript(s.Value)
+			if err != nil {
+				return nil, bad(err.Error())
+			}
+			s.prog = prog
 		case StepSetStatus:
 			if s.Status < 100 || s.Status > 599 {
 				return nil, bad("status must be 100..599")
@@ -123,7 +133,7 @@ func parseRewrite(raw json.RawMessage, phase Phase) (*RewriteSpec, error) {
 
 func (r *RewriteSpec) touchesBody() bool {
 	for _, s := range r.Steps {
-		if s.Type == StepReplaceBody || s.Type == StepJSONSet || s.Type == StepJSONRemove {
+		if s.Type == StepReplaceBody || s.Type == StepJSONSet || s.Type == StepJSONRemove || s.Type == StepScript {
 			return true
 		}
 	}
@@ -186,6 +196,10 @@ func (r *RewriteSpec) apply(m *message, request bool) error {
 				return err
 			}
 			m.body = b
+		case StepScript:
+			if err := runScript(s.prog, m, request); err != nil {
+				return err
+			}
 		case StepSetStatus:
 			if !request {
 				m.status = s.Status

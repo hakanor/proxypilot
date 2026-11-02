@@ -206,13 +206,13 @@
     if (selectedId) location.hash = href('rules');
   }
 
-  const stepTypes = ['set_header', 'add_header', 'remove_header', 'set_query', 'remove_query', 'replace_body', 'json_set', 'json_remove', 'set_status', 'set_url', 'set_path'];
+  const stepTypes = ['set_header', 'add_header', 'remove_header', 'set_query', 'remove_query', 'replace_body', 'json_set', 'json_remove', 'set_status', 'set_url', 'set_path', 'script'];
   // Which fields each step type uses.
   const stepFields: Record<string, ('name' | 'value' | 'pattern' | 'regex' | 'path' | 'status')[]> = {
     set_header: ['name', 'value'], add_header: ['name', 'value'], remove_header: ['name'],
     set_query: ['name', 'value'], remove_query: ['name'],
     replace_body: ['pattern', 'value', 'regex'], json_set: ['path', 'value'], json_remove: ['path'],
-    set_status: ['status'], set_url: ['value'], set_path: ['value'],
+    set_status: ['status'], set_url: ['value'], set_path: ['value'], script: ['value'],
   };
   function cleanStep(s: RewriteStep): RewriteStep {
     const out: RewriteStep = { type: s.type };
@@ -455,6 +455,8 @@
                       spellcheck="false"
                       placeholder={f === 'value' && st.type === 'json_set'
                         ? t('rules.stepFields.jsonValue')
+                        : f === 'value' && st.type === 'script'
+                          ? t('rules.stepFields.script')
                         : f === 'value' && st.type === 'replace_body'
                           ? t('rules.stepFields.replacement')
                           : t(`rules.stepFields.${f}`)}

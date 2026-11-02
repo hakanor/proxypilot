@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"sync/atomic"
 	"time"
 )
 
@@ -21,7 +22,8 @@ func (s *Store) EnforceRetention(ctx context.Context) (int, error) {
 			return removed, err
 		}
 	}
-	if s.opts.MaxBytes <= 0 {
+	maxBytes := atomic.LoadInt64(&s.opts.MaxBytes)
+	if maxBytes <= 0 {
 		return removed, nil
 	}
 	// Newest first with a running total; the first flow over the limit and everything older goes.
@@ -32,7 +34,7 @@ func (s *Store) EnforceRetention(ctx context.Context) (int, error) {
 		FROM flows f
 		LEFT JOIN (SELECT flow_id, SUM(decoded_size) AS sz FROM bodies GROUP BY flow_id) b ON b.flow_id = f.id
 		LEFT JOIN (SELECT flow_id, SUM(size) AS sz FROM ws_messages GROUP BY flow_id) m ON m.flow_id = f.id
-	) WHERE run > ? ORDER BY created_at DESC, id DESC LIMIT 1`, s.opts.MaxBytes).Scan(&createdAt, &id)
+	) WHERE run > ? ORDER BY created_at DESC, id DESC LIMIT 1`, maxBytes).Scan(&createdAt, &id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return removed, nil
 	}
@@ -42,6 +44,9 @@ func (s *Store) EnforceRetention(ctx context.Context) (int, error) {
 	m, err := s.deleteWhere(ctx, `(created_at < ? OR (created_at = ? AND id <= ?)) AND id NOT IN (SELECT flow_id FROM pins)`, createdAt, createdAt, id)
 	return removed + m, err
 }
+
+// SetMaxBytes changes the stored-bytes bound (0 = unlimited).
+func (s *Store) SetMaxBytes(n int64) { atomic.StoreInt64(&s.opts.MaxBytes, n) }
 
 // RunRetention enforces retention every interval until ctx is done.
 func (s *Store) RunRetention(ctx context.Context, interval time.Duration) {

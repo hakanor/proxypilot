@@ -29,8 +29,8 @@ type Filter struct {
 	// IDs restricts to these flows (exports).
 	IDs    []string
 	Pinned bool
-	Since time.Time
-	Until time.Time
+	Since  time.Time
+	Until  time.Time
 }
 
 // Page is one List result.

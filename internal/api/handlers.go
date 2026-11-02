@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +32,8 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/flows/{id}/messages", s.handleMessages)
 	mux.HandleFunc("GET /api/v1/summary", s.handleSummary)
 	mux.HandleFunc("GET /api/v1/diff", s.handleDiff)
+	mux.HandleFunc("GET /api/v1/settings", s.handleGetSettings)
+	mux.HandleFunc("PUT /api/v1/settings", s.handlePutSettings)
 	mux.HandleFunc("GET /api/v1/pins", s.handlePins)
 	mux.HandleFunc("PUT /api/v1/flows/{id}/pin", s.handleSetPin(true))
 	mux.HandleFunc("DELETE /api/v1/flows/{id}/pin", s.handleSetPin(false))
@@ -469,4 +472,39 @@ func (s *Server) handleSetPin(on bool) http.HandlerFunc {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+func (s *Server) handleGetSettings(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Settings == nil {
+		writeError(w, http.StatusNotImplemented, "not_available", "settings are not available")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.deps.Settings.Settings())
+}
+
+func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Settings == nil {
+		writeError(w, http.StatusNotImplemented, "not_available", "settings are not available")
+		return
+	}
+	var in Settings
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "invalid JSON")
+		return
+	}
+	if in.MaxDiskMB < 0 {
+		writeError(w, http.StatusBadRequest, "bad_request", "max_disk_mb must be 0 or more")
+		return
+	}
+	for _, h := range in.Capture.Hosts {
+		if _, err := path.Match(h, ""); err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", "bad host pattern: "+h)
+			return
+		}
+	}
+	if err := s.deps.Settings.SetSettings(in); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, s.deps.Settings.Settings())
 }
