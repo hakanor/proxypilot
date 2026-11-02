@@ -27,7 +27,8 @@ type Filter struct {
 	// GraphQLOp matches an operation name recorded in tags.gql_op (also within batches).
 	GraphQLOp string
 	// IDs restricts to these flows (exports).
-	IDs   []string
+	IDs    []string
+	Pinned bool
 	Since time.Time
 	Until time.Time
 }
@@ -165,6 +166,9 @@ func (f Filter) sql() ([]string, []any, error) {
 		for _, id := range f.IDs {
 			args = append(args, id)
 		}
+	}
+	if f.Pinned {
+		where = append(where, `id IN (SELECT flow_id FROM pins)`)
 	}
 	if f.Source != "" {
 		where, args = append(where, `source = ?`), append(args, f.Source)

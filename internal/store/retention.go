@@ -9,7 +9,7 @@ import (
 )
 
 // EnforceRetention deletes the oldest flows (and their body files) beyond
-// MaxEntries, then beyond MaxBytes of stored bodies and WebSocket messages.
+// MaxEntries, then beyond MaxBytes of stored bodies and WebSocket messages. Pinned flows stay.
 func (s *Store) EnforceRetention(ctx context.Context) (int, error) {
 	n, err := s.Count(ctx)
 	if err != nil {
@@ -17,7 +17,7 @@ func (s *Store) EnforceRetention(ctx context.Context) (int, error) {
 	}
 	removed := 0
 	if n > s.opts.MaxEntries {
-		if removed, err = s.deleteWhere(ctx, `id IN (SELECT id FROM flows ORDER BY created_at ASC, id ASC LIMIT ?)`, n-s.opts.MaxEntries); err != nil {
+		if removed, err = s.deleteWhere(ctx, `id IN (SELECT id FROM flows WHERE id NOT IN (SELECT flow_id FROM pins) ORDER BY created_at ASC, id ASC LIMIT ?)`, n-s.opts.MaxEntries); err != nil {
 			return removed, err
 		}
 	}
@@ -39,7 +39,7 @@ func (s *Store) EnforceRetention(ctx context.Context) (int, error) {
 	if err != nil {
 		return removed, err
 	}
-	m, err := s.deleteWhere(ctx, `created_at < ? OR (created_at = ? AND id <= ?)`, createdAt, createdAt, id)
+	m, err := s.deleteWhere(ctx, `(created_at < ? OR (created_at = ? AND id <= ?)) AND id NOT IN (SELECT flow_id FROM pins)`, createdAt, createdAt, id)
 	return removed + m, err
 }
 

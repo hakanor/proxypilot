@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS bodies (
 	decode_error TEXT NOT NULL DEFAULT '',
 	PRIMARY KEY (flow_id, side)
 );
+CREATE TABLE IF NOT EXISTS pins (flow_id TEXT PRIMARY KEY);
 `
 
 // Open creates or opens <dir>/proxypilot.db and <dir>/bodies/.
@@ -392,6 +393,9 @@ func (s *Store) deleteWhere(ctx context.Context, where string, args ...any) (int
 	if _, err := tx.ExecContext(ctx, `DELETE FROM ws_messages WHERE flow_id IN (`+sub+`)`, args...); err != nil {
 		return 0, err
 	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM pins WHERE flow_id IN (`+sub+`)`, args...); err != nil {
+		return 0, err
+	}
 	res, err := tx.ExecContext(ctx, `DELETE FROM flows WHERE `+where, args...)
 	if err != nil {
 		return 0, err
@@ -404,6 +408,40 @@ func (s *Store) deleteWhere(ctx context.Context, where string, args ...any) (int
 	}
 	n, _ := res.RowsAffected()
 	return int(n), nil
+}
+
+// SetPin pins or unpins a flow. Pinned flows survive retention until Clear.
+func (s *Store) SetPin(ctx context.Context, id string, on bool) error {
+	if !on {
+		_, err := s.db.ExecContext(ctx, `DELETE FROM pins WHERE flow_id=?`, id)
+		return err
+	}
+	var exists int
+	if err := s.db.QueryRowContext(ctx, `SELECT 1 FROM flows WHERE id=?`, id).Scan(&exists); errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	} else if err != nil {
+		return err
+	}
+	_, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO pins(flow_id) VALUES(?)`, id)
+	return err
+}
+
+// Pins lists the pinned flow ids.
+func (s *Store) Pins(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT flow_id FROM pins`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }
 
 // AddSession records a session without making it current (imports).

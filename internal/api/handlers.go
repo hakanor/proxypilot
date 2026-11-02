@@ -31,6 +31,9 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/flows/{id}/messages", s.handleMessages)
 	mux.HandleFunc("GET /api/v1/summary", s.handleSummary)
 	mux.HandleFunc("GET /api/v1/diff", s.handleDiff)
+	mux.HandleFunc("GET /api/v1/pins", s.handlePins)
+	mux.HandleFunc("PUT /api/v1/flows/{id}/pin", s.handleSetPin(true))
+	mux.HandleFunc("DELETE /api/v1/flows/{id}/pin", s.handleSetPin(false))
 	mux.HandleFunc("GET /api/v1/ssl-policy", s.handleGetPolicy)
 	mux.HandleFunc("PUT /api/v1/ssl-policy", s.handlePutPolicy)
 	mux.HandleFunc("DELETE /api/v1/ssl-policy/learned/{host}", s.handleForgetTunnel)
@@ -134,6 +137,7 @@ func parseFilter(r *http.Request) (store.Filter, error) {
 		IDs:         splitList(q.Get("ids")),
 		Source:      q.Get("source"),
 		Text:        q.Get("q"),
+		Pinned:      q.Get("pinned") == "true",
 	}
 	if m := q.Get("method"); m != "" {
 		f.Methods = splitList(m)
@@ -441,4 +445,28 @@ func (s *Server) handleAppIcon(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "private, max-age=3600")
 	_, _ = w.Write(b)
+}
+
+func (s *Server) handlePins(w http.ResponseWriter, r *http.Request) {
+	ids, err := s.deps.Store.Pins(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ids": ids})
+}
+
+func (s *Server) handleSetPin(on bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := s.deps.Store.SetPin(r.Context(), r.PathValue("id"), on)
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "flow not found")
+			return
+		}
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "internal", err.Error())
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
 }

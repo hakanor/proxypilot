@@ -91,7 +91,21 @@
   let view = $state<View>({ kind: 'all' });
   let selected = $state<string | null>(null);
   let detailOpen = $state(false);
-  let pinned = $state(new Set<string>(JSON.parse(store('pp.pinned') ?? '[]')));
+  let pinned = $state(new Set<string>());
+  // Pins live on the daemon; older versions kept them in this browser.
+  async function loadPins() {
+    const local: string[] = JSON.parse(store('pp.pinned') ?? '[]');
+    if (local.length) {
+      await Promise.allSettled(local.map((id) => api.setPin(id, true)));
+      try {
+        localStorage.removeItem('pp.pinned');
+      } catch {
+        /* private mode */
+      }
+    }
+    pinned = new Set((await api.pins()).ids);
+    await traffic.load(false);
+  }
   let theme = $state<'dark' | 'light'>(
     (store('pp.theme') as 'dark' | 'light' | null) ??
       (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
@@ -186,6 +200,7 @@
   const stream = new Stream({
     onOpen: (reconnect) => {
       traffic.load(!reconnect).catch(() => {});
+      loadPins().catch(() => {});
       refreshStatus();
       api.sslPolicy().then((p) => (ssl = p), () => {});
     },
@@ -256,6 +271,7 @@
   let clearing = $state(false);
   async function clearAll() {
     traffic.clear();
+    pinned = new Set();
     selected = null;
     detailOpen = false;
     if (clearing) return;
@@ -365,7 +381,10 @@
     const next = new Set(pinned);
     if (!next.delete(id)) next.add(id);
     pinned = next;
-    store('pp.pinned', JSON.stringify([...next]));
+    api.setPin(id, next.has(id)).catch((e) => {
+      notice = e instanceof Error ? e.message : String(e);
+      loadPins().catch(() => {});
+    });
   }
 
   function select(id: string) {

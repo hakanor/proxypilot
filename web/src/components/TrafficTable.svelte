@@ -75,12 +75,13 @@
     }
   }
   const custom = $derived(Object.keys(widths).length > 0);
-  // A set URL width is a maximum, so the URL column still gives way when the window narrows.
   const colsCSS = $derived(
     cols
-      .map((c) => (c.key === 'url' ? (widths.url ? `minmax(${MIN_W.url}px, ${widths.url}px)` : 'minmax(60px, 1fr)') : `${widths[c.key] ?? MIN_W[c.key]}px`))
+      .map((c) => (c.key === 'url' ? (widths.url ? `${widths.url}px` : 'minmax(60px, 1fr)') : `${widths[c.key] ?? MIN_W[c.key]}px`))
       .join(' ') + ' minmax(18px, 1fr)',
   );
+  // Columns may outgrow the table; it then scrolls sideways (8 column gaps of 14px, 16px padding each side).
+  const minTotal = $derived(cols.reduce((n, c) => n + (widths[c.key] ?? MIN_W[c.key] ?? 0), 0) + 18 + 8 * 14 + 32);
   function startResize(e: PointerEvent, i: number) {
     e.preventDefault();
     e.stopPropagation();
@@ -91,10 +92,9 @@
     cols.forEach((c, ci) => (frozen[c.key] = Math.round(cells[ci].getBoundingClientRect().width)));
     const key = cols[i].key;
     const w0 = frozen[key]!;
-    const free = Math.max(0, Math.round(cells[cells.length - 1].getBoundingClientRect().width) - 18);
     const x0 = e.clientX;
     const move = (ev: PointerEvent) => {
-      const dx = Math.min(Math.round(ev.clientX - x0), free);
+      const dx = Math.round(ev.clientX - x0);
       widths = { ...frozen, [key]: Math.max(MIN_W[key] ?? 24, w0 + dx) };
     };
     const up = () => {
@@ -177,7 +177,8 @@
   }
 </script>
 
-<div class="ttable flex min-h-0 flex-1 flex-col text-[13px]" role="grid" aria-rowcount={rows.length} style={custom ? `--cols: ${colsCSS}` : undefined}>
+<div class="ttable min-h-0 flex-1 overflow-x-auto text-[13px]" role="grid" aria-rowcount={rows.length} style={custom ? `--cols: ${colsCSS}` : undefined}>
+  <div class="flex h-full flex-col" style={custom ? `min-width: ${minTotal}px` : undefined}>
   <div class="row head h-[30px] shrink-0 border-b border-border text-xs font-medium text-head" role="row">
     {#each cols as c, ci (c.key)}
       <div class="relative flex h-full min-w-0">
@@ -259,12 +260,13 @@
             <span class="text-right font-mono text-xs text-muted-foreground">{formatDuration(r.total_ms)}</span>
             <span class="text-right font-mono text-xs text-muted-foreground">{formatBytes(r.resp_size || r.bytes_down)}</span>
             <span class="text-[10px] font-semibold text-primary" title={r.matched_rules?.length ? t('table.ruleMark', { ids: r.matched_rules.join(', ') }) : undefined}
-              >{r.matched_rules?.length ? 'R' : pinned.has(r.id) ? '★' : ''}</span
+              >{pinned.has(r.id) ? '★' : ''}{r.matched_rules?.length ? 'R' : ''}</span
             >
           </div>
         {/if}
       {/each}
     </div>
+  </div>
   </div>
 </div>
 

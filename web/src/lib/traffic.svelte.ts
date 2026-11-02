@@ -28,10 +28,14 @@ export class Traffic {
     setInterval(() => this.updateRate(), 250);
   }
 
-  /** Initial load / resync: the latest 500 from REST, merged with what we have. */
+  /** Initial load / resync: the latest 500 from REST plus pinned flows, merged with what we have. */
   async load(replace: boolean) {
-    const [{ flows }, sum] = await Promise.all([api.flows(500), replace ? api.summaryAll().catch(() => null) : Promise.resolve(null)]);
-    const incoming = flows.map(toRow).reverse(); // API is newest first
+    const [{ flows }, old, sum] = await Promise.all([
+      api.flows(500),
+      api.pinnedFlows(),
+      replace ? api.summaryAll().catch(() => null) : Promise.resolve(null),
+    ]);
+    const incoming = [...old.flows.filter((f) => !flows.some((g) => g.id === f.id)), ...flows].map(toRow).reverse(); // API is newest first; merge re-sorts
     if (replace) {
       this.index.clear();
       this.seq = 0;

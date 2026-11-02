@@ -456,6 +456,7 @@ export const api = {
   importFile: upload,
   status: () => call<Status>('GET', '/status'),
   flows: (limit = 500) => call<{ flows: Flow[] }>('GET', `/flows?limit=${limit}`),
+  pinnedFlows: () => call<{ flows: Flow[] }>('GET', '/flows?limit=500&pinned=true'),
   flow: (id: string, redact = false) =>
     call<FlowDetail>('GET', `/flows/${encodeURIComponent(id)}${redact ? '?redact=true' : ''}`),
   body: (id: string, side: 'req' | 'resp', max: number, redact: boolean) =>
@@ -509,6 +510,8 @@ export const api = {
   toggleRule: (id: string, enabled: boolean) => call<Rule>('POST', `/rules/${encodeURIComponent(id)}/toggle`, { enabled }),
   clearRules: (owner: string) => call<{ deleted: number }>('DELETE', `/rules?owner=${encodeURIComponent(owner)}`),
   mapLocalFromFlow: (id: string) => call<{ rule: Rule; file: string }>('POST', `/flows/${encodeURIComponent(id)}/map-local`, {}),
+  pins: () => call<{ ids: string[] }>('GET', '/pins'),
+  setPin: (id: string, on: boolean) => call<void>(on ? 'PUT' : 'DELETE', `/flows/${id}/pin`),
   sslPolicy: () => call<SSLPolicy>('GET', '/ssl-policy'),
   setSSLPolicy: (p: SSLPolicy) =>
     call<SSLPolicy>('PUT', '/ssl-policy', { mode: p.mode, allowlist: p.allowlist, denylist: p.denylist }),
