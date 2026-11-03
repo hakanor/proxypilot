@@ -168,6 +168,36 @@
   function onscroll() {
     atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - ROW * 2;
     atTop = el.scrollTop <= ROW * 2;
+    hideTip();
+  }
+
+  // The cell splits the URL in two halves that shrink equally: start…end stays visible.
+  // Full URL on hover, only when the cell cuts it off. One shared element, so rows stay light.
+  let tip = $state<{ url: string; left: number; top?: number; bottom?: number; el: HTMLElement } | null>(null);
+  let tipTimer: ReturnType<typeof setTimeout> | undefined;
+  function showTip(e: PointerEvent, url: string) {
+    const cell = e.currentTarget as HTMLElement;
+    clearTimeout(tipTimer);
+    if (!url || ![...cell.children].some((c) => c.scrollWidth > c.clientWidth)) return;
+    tipTimer = setTimeout(() => {
+      const b = cell.getBoundingClientRect();
+      const left = Math.max(8, Math.min(b.left, innerWidth - 728));
+      tip = b.bottom > innerHeight / 2 ? { url, left, bottom: innerHeight - b.top + 4, el: cell } : { url, left, top: b.bottom + 4, el: cell };
+    }, 250);
+  }
+  function hideTip() {
+    clearTimeout(tipTimer);
+    tip = null;
+  }
+  // The virtualizer can drop the hovered row without a pointerleave.
+  $effect(() => {
+    void items;
+    if (tip && !tip.el.isConnected) hideTip();
+  });
+  // A container query ancestor would capture position: fixed, so the tooltip lives on body.
+  function portal(node: HTMLElement) {
+    document.body.append(node);
+    return { destroy: () => node.remove() };
   }
 
   /** Keeps the keyboard selection visible. */
@@ -177,7 +207,7 @@
   }
 </script>
 
-<div class="ttable min-h-0 flex-1 overflow-x-auto text-[13px]" role="grid" aria-rowcount={rows.length} style={custom ? `--cols: ${colsCSS}` : undefined}>
+<div class="ttable min-h-0 flex-1 overflow-x-auto text-[13px]" role="grid" aria-rowcount={rows.length} style={custom ? `--cols: ${colsCSS}` : undefined} onscroll={hideTip}>
   <div class="flex h-full flex-col" style={custom ? `min-width: ${minTotal}px` : undefined}>
   <div class="row head h-[30px] shrink-0 border-b border-border text-xs font-medium text-head" role="row">
     {#each cols as c, ci (c.key)}
@@ -217,6 +247,8 @@
           {@const p = statusPill(r)}
           {@const sel = r.id === selected}
           {@const app = appOf(r)}
+          {@const text = r.url || r.error_kind || ''}
+          {@const mid = Math.ceil(text.length / 2)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             class={cn(
@@ -238,8 +270,9 @@
             }}
           >
             <span class="text-faint">{r.n}</span>
-            <span class="truncate font-mono text-[12.5px]" title={r.url}
-              >{#if r.gql_op}<span class="mr-1 rounded-[5px] bg-neutral-bg px-1.5 font-sans text-[10px] text-muted-foreground">{r.gql_type} {r.gql_op}</span>{/if}{r.url || r.error_kind}</span
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <span class="flex min-w-0 overflow-hidden font-mono text-[12.5px]" onpointerenter={(e) => showTip(e, r.url)} onpointerleave={hideTip} onpointerdown={hideTip}
+              >{#if r.gql_op}<span class="mr-1 shrink-0 rounded-[5px] bg-neutral-bg px-1.5 font-sans text-[10px] text-muted-foreground">{r.gql_type} {r.gql_op}</span>{/if}<span class="min-w-0 truncate">{text.slice(0, mid)}</span><span class="min-w-0 overflow-hidden whitespace-nowrap" dir="rtl"><span dir="ltr">{text.slice(mid)}</span></span></span
             >
             <span class="flex min-w-0 items-center gap-1.5 text-muted-foreground" title={app}>
               {#if hasIcon(r)}
@@ -269,6 +302,20 @@
   </div>
   </div>
 </div>
+
+{#if tip}
+  {@const m = tip.url.match(/^([a-z]+:\/\/[^/?#]+)(.*)$/is)}
+  <div
+    use:portal
+    role="tooltip"
+    class="pointer-events-none fixed z-50 line-clamp-[12] w-max max-w-[min(720px,calc(100vw-16px))] rounded-lg border border-border bg-popover px-3 py-2 font-mono text-xs leading-[1.6] break-all text-muted-foreground shadow-xl ring-1 ring-black/10"
+    style:left="{tip.left}px"
+    style:top={tip.top === undefined ? undefined : `${tip.top}px`}
+    style:bottom={tip.bottom === undefined ? undefined : `${tip.bottom}px`}
+  >
+    {#if m}<span class="font-semibold text-foreground">{m[1]}</span>{m[2]}{:else}{tip.url}{/if}
+  </div>
+{/if}
 
 <style>
   /* Grid columns, virtual positioning and container queries stay in CSS. */
