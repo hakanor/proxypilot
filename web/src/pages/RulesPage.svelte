@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { t } from '../lib/i18n';
   import { api, type RuleContent, type Rule, type RuleInput, type RewriteStep } from '../lib/api';
   import { formatCount } from '../lib/format';
@@ -126,7 +126,8 @@
   });
   // Open the rule named in the URL (#/rules/<id>), e.g. after "Save as Map Local".
   $effect(() => {
-    if (selectedId && !selectedId.startsWith('new~') && editing !== selectedId) {
+    // editing is untracked: close() clears it before the hash changes, which would reopen the rule.
+    if (selectedId && !selectedId.startsWith('new~') && untrack(() => editing) !== selectedId) {
       const r = rules.find((x) => x.id === selectedId);
       if (r) open(r);
     }
@@ -268,12 +269,16 @@
         await api.setRuleContent(r.id, fileText);
       }
       onnotice(t('rules.saved', { name: r.name }));
-      if (modal) return close();
-      await load();
-      open(r);
+      close();
+      if (!modal) await load();
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     }
+  }
+  function saveShortcut(e: KeyboardEvent) {
+    if (!draft || !(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 's') return;
+    e.preventDefault();
+    if (!e.repeat) save();
   }
 
   // Resizable columns. Each divider sits between two columns and follows the pointer: the
@@ -386,6 +391,7 @@
     `${r.match.methods?.length ? r.match.methods.join(',') + ' ' : ''}${r.match.url || '*'}${r.spec.dir ? `  →  ${r.spec.dir}` : ''}${r.spec.to ? `  →  ${r.spec.to}` : ''}${r.spec.steps ? `  (${r.spec.steps.length} steps)` : ''}`;
 </script>
 
+<svelte:window onkeydown={saveShortcut} />
 {#if menu}<ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.r)} onclose={() => (menu = null)} />{/if}
 {#snippet editorView()}
 {#if draft}
@@ -550,8 +556,8 @@
         {:else if !editing}
           <label>{t('rules.fields.ttl')}<Input class="min-w-0 font-mono text-xs" bind:value={draft.ttl} placeholder="30m" /></label>
         {/if}
-        {#if error}<div class="error mono">{error}</div>{/if}
       </div>
+      {#if error}<div class="error mono">{error}</div>{/if}
       <div class="foot">
         {#if editing}<Button variant="destructive" onclick={remove}>{t('rules.delete')}</Button>{/if}
         <span class="grow"></span>
