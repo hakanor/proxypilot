@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../lib/i18n';
+  import HoverTip from './HoverTip.svelte';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import PanelLeftClose from '@lucide/svelte/icons/panel-left-close';
   import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open';
@@ -181,7 +182,11 @@
     { icon: 'all', label: t('sidebar.allTraffic'), view: { kind: 'all' } as View },
     { icon: 'pinned', label: t('sidebar.pinned'), view: { kind: 'pinned' } as View },
   ]);
+
+  let tip: HoverTip;
 </script>
+
+<HoverTip bind:this={tip} />
 
 {#snippet nodeIcon(icon: Icon, app: string | undefined, cls = 'size-4')}
   {#if icon === 'app' && app && !noIcon.has(app)}
@@ -210,9 +215,10 @@
     <button type="button" class={cn(
         'flex h-7 w-full min-w-0 items-center gap-2 rounded-md border-0 bg-transparent pr-2 pl-1 text-left text-foreground group-hover:bg-hover',
         active(n.view) && 'bg-sel font-medium text-accent-foreground group-hover:bg-sel',
-      )} onclick={() => go(n.view)} title={n.label}>
-      <span class="flex w-[18px] shrink-0 items-center justify-center text-muted-foreground">{@render nodeIcon(n.icon, n.app, n.icon === 'host' ? 'size-3.5' : 'size-4')}</span><span
-        class={cn('flex-1 truncate', n.err && depth > 0 && 'text-err')}>{n.label}</span
+      )} onclick={() => go(n.view)}>
+      <span class="flex w-[18px] shrink-0 items-center justify-center text-muted-foreground">{@render nodeIcon(n.icon, n.app, n.icon === 'host' ? 'size-3.5' : 'size-4')}</span><!-- svelte-ignore a11y_no_static_element_interactions --><span
+        class={cn('flex min-w-0 flex-1 overflow-hidden', n.err && depth > 0 && 'text-err')} onpointerenter={(e) => tip.show(e, n.label)} onpointerleave={() => tip.hide()} onpointerdown={() => tip.hide()}
+        ><span class="min-w-0 truncate">{n.label.slice(0, Math.ceil(n.label.length / 2))}</span><span class="min-w-0 overflow-hidden whitespace-nowrap" dir="rtl"><span dir="ltr">{n.label.slice(Math.ceil(n.label.length / 2))}</span></span></span
       ><span class="text-xs tabular-nums text-faint">{formatCount(n.count)}</span>
     </button>
   </div>
