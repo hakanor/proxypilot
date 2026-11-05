@@ -64,6 +64,16 @@ proxypilot setup device
 
 The control API stays on this Mac; only the proxy is reachable from the network. If the macOS firewall is on, allow incoming connections for ProxyPilot.
 
+## Choose what to decrypt
+
+The **Decrypt** button next to the System proxy switch opens one dialog:
+
+- **Block list** (default): decrypt everything except the hosts you list.
+- **Allow list**: decrypt only the hosts you list; everything else is tunneled untouched.
+- **Off**: decrypt nothing.
+
+Patterns are wildcards (`*.example.com`, `api.*`); the block list always wins. In Allow list mode, **also popular and pinned hosts** decrypts the hosts you work with most without listing them.
+
 ## SSL pinning and hosts that must not be decrypted
 
 Apple services are tunneled untouched by default. When a client keeps rejecting the certificate (`client_tls_rejected`), add its host to the bypass list from the error panel, or:

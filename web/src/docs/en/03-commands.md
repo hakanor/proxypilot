@@ -31,7 +31,19 @@ Every command accepts `--json`. Secrets (Authorization, cookies, tokens, passwor
 | `proxypilot setup device` | QR code and steps for a physical phone |
 | `proxypilot chrome launch\|attach\|status\|detach` | Capture Chrome tabs over DevTools |
 | `proxypilot setup android` | Emulator / USB device over adb (`--ca user\|system`, `--remove`) |
+| `proxypilot popular [--paths]` / `popular clear` | Hosts and paths you use most |
+| `proxypilot terminate [--yes]` | Release breakpoints, delete agent and breakpoint rules, turn the system proxy off, stop |
 | `proxypilot uninstall` | Show (or, with `--yes`, apply) the cleanup plan |
+
+## Upstream proxy
+
+Behind a company proxy, send ProxyPilot's outgoing traffic through it:
+
+```bash
+proxypilot start --upstream-proxy http://user:pass@proxy.corp:8080
+```
+
+Also `PROXYPILOT_UPSTREAM_PROXY` or `proxy.upstream` in the config. localhost, `*.local`, private IPs and `proxy.upstream_bypass` connect directly. Only `http://` proxies are supported.
 
 ## Filters
 

@@ -40,6 +40,7 @@ proxypilot rule add rewrite --url '*/feed' --phase response --replace 'Sold out=
 | JSON field | `--json-set '$.a.b[0]=value'`, `--json-remove '$.a'` | both |
 | status | `--status 503` | response |
 | URL / path | `--set-url URL`, `--set-path /v3/x` | request |
+| delay | `{"type":"delay","value":"2s"}` (max 1m) | both |
 
 Flags run in the order of this table; for any other order pass `--steps-file steps.json` with a list like `[{"type":"json_set","path":"$.a","value":"1"}]`.
 
