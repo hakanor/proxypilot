@@ -21,15 +21,30 @@
     }
   },
   "ssl": {
-    "title": "SSL list",
-    "body": "Mode: {mode}. Decrypted hosts show full requests; tunneled hosts show only the host, timing and size, and the app keeps working.",
+    "title": "What to decrypt",
+    "body": "Decrypted hosts show full requests. Tunneled hosts show only the host, timing and size, and the app keeps working.",
+    "modes": {
+      "allowlist": "Allow list",
+      "all": "Block list",
+      "off": "Off"
+    },
+    "modeHint": {
+      "allowlist": "Only the hosts below are decrypted. Everything else is tunneled.",
+      "all": "Everything is decrypted except the hosts below.",
+      "off": "Nothing is decrypted. Hosts below stay tunneled when you switch back."
+    },
     "allowlist": {
       "title": "Decrypt only these",
-      "hint": "Used in \"Allowlist only\" mode. *.example.com matches subdomains."
+      "hint": "*.example.com matches its subdomains (not example.com itself)."
     },
     "denylist": {
       "title": "Never decrypt",
-      "hint": "Always tunneled, in every mode. Use it for apps with SSL pinning."
+      "hint": "Always tunneled, in every mode. Use it for apps with SSL pinning. *.example.com matches subdomains."
+    },
+    "favorites": {
+      "title": "Also decrypt popular and pinned hosts",
+      "hint": "Hosts you open, pin or add rules for are added automatically.",
+      "none": "None yet: open or pin a request first."
     },
     "learned": {
       "title": "Tunneled automatically",
@@ -51,13 +66,12 @@
     "autoScroll": "Auto-scroll",
     "rules": "Rules",
     "breakpoints": "Breakpoints",
-    "ssl": "SSL",
     "sslModes": {
-      "all": "Intercept all",
-      "allowlist": "Allowlist only",
-      "off": "Tunnel all"
+      "all": "Block list",
+      "allowlist": "Allow list",
+      "off": "Off"
     },
-    "sslList": "SSL list…",
+    "scope": "Decrypt",
     "toggleTheme": "Toggle theme",
     "proxyUp": "Proxy listening on {addr}",
     "removeChip": "Remove filter {chip}",
@@ -133,6 +147,8 @@
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
     "favorites": "FAVORITES",
+    "popular": "POPULAR",
+    "clearPopular": "Clear the popular list",
     "simulators": "SIMULATORS",
     "thisMac": "MACOS APPS"
   },
@@ -930,7 +946,8 @@
       "set_status": "Set status",
       "set_url": "Set URL",
       "set_path": "Set path",
-      "script": "Script (JavaScript)"
+      "script": "Script (JavaScript)",
+      "delay": "Delay"
     },
     "stepFields": {
       "name": "Name",
@@ -941,6 +958,7 @@
       "path": "JSON path ($.user.isPremium)",
       "jsonValue": "Value (JSON: true, 3, \"text\")",
       "status": "Status",
+      "delay": "How long: 2s, 500ms (up to 1m)",
       "script": "msg.body = msg.body.replace(\"free\", \"pro\")  // msg: headers, body, status or url"
     },
     "rwHint": "Compressed bodies are decoded first; the edited body is sent without compression.",
@@ -1120,6 +1138,26 @@
     "blockPlaceholder": "ads.example.com",
     "add": "Add",
     "remove": "Remove",
-    "noBlocks": "Nothing blocked."
+    "noBlocks": "Nothing blocked.",
+    "danger": "Stop ProxyPilot",
+    "dangerHint": "Cleans up everything ProxyPilot changed and stops it. Same as proxypilot terminate in the terminal.",
+    "terminate": "Terminate…"
+  },
+  "terminate": {
+    "title": "Terminate ProxyPilot",
+    "body": "The following will happen:",
+    "items": {
+      "release": "Paused requests continue",
+      "agentRules": "Rules added by agents are deleted",
+      "bpRules": "Breakpoint rules are deleted",
+      "systemProxy": "The system proxy settings are restored",
+      "stop": "ProxyPilot stops"
+    },
+    "confirm": "Do you want to continue?",
+    "keeps": "Your recordings, other rules and settings are kept.",
+    "cancel": "Cancel",
+    "wait": "Terminate ({n})",
+    "button": "Terminate",
+    "done": "ProxyPilot is stopped. Start it again from the terminal:"
   }
 }

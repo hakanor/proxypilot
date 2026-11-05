@@ -18,6 +18,7 @@
   import { notify, enableNotifications, sendNotification } from '../lib/notify.svelte';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import Settings2 from '@lucide/svelte/icons/settings-2';
+  import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import { api, type ThrottleInfo } from '../lib/api';
   import { cn } from '$lib/utils.js';
 
@@ -35,17 +36,15 @@
     onexport: (kind: 'har' | 'session', all: boolean, secrets: boolean) => void;
     onimport: (file: File) => void;
     visibleCount: number;
-    onssl: (mode: SSLPolicy['mode']) => void;
     onssllist: () => void;
     ontheme: () => void;
   }
-  let { status, ssl, theme, onrecord, onclear, clearing = false, sysProxy, ontogglesysproxy, ontogglenocaching, onexport, onimport, visibleCount, onssl, onssllist, ontheme }: Props =
+  let { status, ssl, theme, onrecord, onclear, clearing = false, sysProxy, ontogglesysproxy, ontogglenocaching, onexport, onimport, visibleCount, onssllist, ontheme }: Props =
     $props();
 
   let secrets = $state(false);
   const recording = $derived(status?.recording ?? true);
   const running = $derived(status?.running ?? false);
-  const sslModes: SSLPolicy['mode'][] = ['all', 'allowlist', 'off'];
   let importInput = $state<HTMLInputElement>();
 
   // Network throttle: presets from the server; hosts limit it to some hosts.
@@ -189,6 +188,11 @@
     </DropdownMenu.Root>
   </span>
 
+  {#if ssl}
+    <Button variant="outline" size="sm" class="mr-1 gap-1.5 text-muted-foreground" title={t('ssl.title')} onclick={onssllist}
+      ><ShieldCheck class="size-3.5" />{t('toolbar.scope')}: <span class="font-medium text-foreground">{t(`ssl.modes.${ssl.mode}`)}</span></Button
+    >
+  {/if}
   {#if sysProxy !== null}
     <label class="mr-1 inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-muted-foreground">
       {t('toolbar.systemProxy')}
@@ -230,16 +234,6 @@
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
       <DropdownMenu.Item onSelect={() => importInput?.click()}>{t('toolbar.import')}…</DropdownMenu.Item>
-      {#if ssl}
-        <DropdownMenu.Separator />
-        <DropdownMenu.Label class="text-xs text-faint">{t('toolbar.ssl')}</DropdownMenu.Label>
-        <DropdownMenu.RadioGroup value={ssl.mode} onValueChange={(v) => onssl(v as SSLPolicy['mode'])}>
-          {#each sslModes as m (m)}
-            <DropdownMenu.RadioItem value={m}>{t(`toolbar.sslModes.${m}`)}</DropdownMenu.RadioItem>
-          {/each}
-        </DropdownMenu.RadioGroup>
-        <DropdownMenu.Item onSelect={onssllist}>{t('toolbar.sslList')}</DropdownMenu.Item>
-      {/if}
       <DropdownMenu.Separator />
       <DropdownMenu.Item onSelect={ontheme}>{theme === 'dark' ? t('toolbar.themeLight') : t('toolbar.themeDark')}</DropdownMenu.Item>
       <DropdownMenu.Item onSelect={() => (location.hash = href('docs'))}>{t('toolbar.docs')}</DropdownMenu.Item>

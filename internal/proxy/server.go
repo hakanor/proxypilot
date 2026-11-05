@@ -63,6 +63,7 @@ type Server struct {
 	inner      map[*http.Server]struct{}
 	tunnels    sync.WaitGroup
 	closing    atomic.Bool
+	up         atomic.Pointer[upstream] // SetUpstream; nil connects directly
 }
 
 func New(opts Options) *Server {
@@ -83,7 +84,8 @@ func New(opts Options) *Server {
 	}
 	s := &Server{opts: opts, hooks: opts.Hooks, log: opts.Logger}
 	s.transport = &http.Transport{
-		Proxy:                 nil, // never chain to the system proxy (which may be us)
+		// Never the system proxy (which may be us); only an explicit SetUpstream.
+		Proxy:                 s.proxyFunc,
 		DialContext:           (&net.Dialer{Timeout: 15 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
 		TLSClientConfig:       opts.UpstreamTLS,
 		TLSHandshakeTimeout:   15 * time.Second,

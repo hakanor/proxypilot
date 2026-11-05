@@ -164,7 +164,7 @@ func (s *Server) wsFail(h Hooks, w http.ResponseWriter, f *Flow, err error) {
 func (s *Server) dialUpstream(ctx context.Context, scheme, hostport string) (net.Conn, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	c, err := s.transport.DialContext(ctx, "tcp", hostport)
+	c, err := s.dial(ctx, hostport)
 	if err != nil || scheme != "https" {
 		return c, err
 	}

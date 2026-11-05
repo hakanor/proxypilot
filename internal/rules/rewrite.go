@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dop251/goja"
 
@@ -30,6 +31,7 @@ const (
 	StepSetURL       = "set_url"       // value (request, same scheme allowed to change)
 	StepSetPath      = "set_path"      // value (request)
 	StepScript       = "script"        // value: JavaScript editing msg (see script.go)
+	StepDelay        = "delay"         // value: how long to hold the message ("2s", "500ms"; a bare number is ms)
 )
 
 type Step struct {
@@ -45,7 +47,11 @@ type Step struct {
 	segs []pathSeg
 	prog *goja.Program
 	val  any
+	dur  time.Duration
 }
+
+// maxDelay keeps a delay step from holding a connection open for long.
+const maxDelay = time.Minute
 
 // RewriteSpec is an ordered list of steps.
 type RewriteSpec struct {
@@ -102,6 +108,15 @@ func parseRewrite(raw json.RawMessage, phase Phase) (*RewriteSpec, error) {
 				return nil, bad(err.Error())
 			}
 			s.prog = prog
+		case StepDelay:
+			d, err := time.ParseDuration(s.Value)
+			if n, nerr := strconv.Atoi(s.Value); nerr == nil {
+				d, err = time.Duration(n)*time.Millisecond, nil
+			}
+			if err != nil || d <= 0 || d > maxDelay {
+				return nil, bad(`value must be a duration up to 1m, like "2s" or "500ms"`)
+			}
+			s.dur = d
 		case StepSetStatus:
 			if s.Status < 100 || s.Status > 599 {
 				return nil, bad("status must be 100..599")
@@ -200,6 +215,8 @@ func (r *RewriteSpec) apply(m *message, request bool) error {
 			if err := runScript(s.prog, m, request); err != nil {
 				return err
 			}
+		case StepDelay:
+			time.Sleep(s.dur)
 		case StepSetStatus:
 			if !request {
 				m.status = s.Status

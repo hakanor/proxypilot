@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 func steps(s ...Step) json.RawMessage { return spec(RewriteSpec{Steps: s}) }
@@ -79,6 +80,9 @@ func TestRewriteValidation(t *testing.T) {
 		{PhaseResponse, Step{Type: StepSetQuery, Name: "a"}},
 		{PhaseResponse, Step{Type: StepSetPath, Value: "/x"}},
 		{PhaseRequest, Step{Type: StepSetURL, Value: "/relative"}},
+		{PhaseRequest, Step{Type: StepDelay, Value: "soon"}},
+		{PhaseRequest, Step{Type: StepDelay, Value: "2m"}},
+		{PhaseRequest, Step{Type: StepDelay}},
 	}
 	for i, b := range bad {
 		if _, err := parseRewrite(steps(b.step), b.phase); !errors.Is(err, ErrInvalid) {
@@ -156,5 +160,21 @@ func TestRewriteAndMapRemoteThroughProxy(t *testing.T) {
 	pu, _ := url.Parse(prod.URL)
 	if string(b) != "staging:/keep?y=2 host="+pu.Host {
 		t.Fatalf("map remote preserve host: %s", b)
+	}
+}
+
+func TestRewriteDelay(t *testing.T) {
+	for in, want := range map[string]time.Duration{"150ms": 150 * time.Millisecond, "120": 120 * time.Millisecond} {
+		rw, err := parseRewrite(steps(Step{Type: StepDelay, Value: in}), PhaseBoth)
+		if err != nil {
+			t.Fatalf("%s: %v", in, err)
+		}
+		start := time.Now()
+		if err := rw.apply(&message{header: http.Header{}}, false); err != nil {
+			t.Fatal(err)
+		}
+		if got := time.Since(start); got < want {
+			t.Errorf("%s: held %v, want at least %v", in, got, want)
+		}
 	}
 }

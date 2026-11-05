@@ -71,6 +71,8 @@ type Deps struct {
 		Settings() proxy.ThrottleSettings
 		Set(proxy.ThrottleSettings)
 	}
+	// Terminate cleans up (breakpoints, agent rules, system proxy) and stops the daemon (nil: 501).
+	Terminate func(ctx context.Context, deleteBreakpointRules bool) (any, error)
 	// AppIcon renders a client app's icon as PNG (nil or error: 404, the UI falls back).
 	AppIcon func(app string) ([]byte, error)
 	// Settings reads and changes what the Settings page edits (nil: not available).
@@ -112,8 +114,9 @@ type StatusInfo struct {
 	Recording          bool      `json:"recording"`
 	MaxEntries         int       `json:"max_entries"` // store retention cap (0 = unlimited)
 	DataDir            string    `json:"data_dir"`
-	NoCaching          bool      `json:"no_caching"`         // clients can't use their caches (toolbar switch)
-	Throttle           string    `json:"throttle,omitempty"` // active throttle profile, "" when off
+	NoCaching          bool      `json:"no_caching"`               // clients can't use their caches (toolbar switch)
+	Throttle           string    `json:"throttle,omitempty"`       // active throttle profile, "" when off
+	UpstreamProxy      string    `json:"upstream_proxy,omitempty"` // host:port of the upstream proxy, no credentials
 }
 
 type Server struct {

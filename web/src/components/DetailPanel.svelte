@@ -44,6 +44,12 @@
   const respTab = $derived<RespTab>(respTabs.includes(respTabPref) ? respTabPref : respTabs[0]);
   function pickReq(v: ReqTab) { reqTab = v; }
   function pickResp(v: RespTab) { respTabPref = v; }
+  // Counts toward Popular once the flow stays open a moment (arrow-key skimming does not count).
+  $effect(() => {
+    const id = row.id;
+    const timer = setTimeout(() => api.bumpPopular(id).catch(() => {}), 800);
+    return () => clearTimeout(timer);
+  });
   $effect(() => {
     void row.id;
     reqTab = 'body';
@@ -92,11 +98,12 @@
 
 <section class="relative flex h-full w-full min-h-0 flex-col border-t border-border bg-panel text-[13px]">
   <div class="flex min-h-10 shrink-0 items-center gap-2 border-b border-border px-4 py-1.5">
-    <span class="rounded bg-muted px-1.5 py-0.5 font-mono text-[11.5px] font-semibold">{row.method}</span>
-    <span class={cn('rounded px-1.5 py-0.5 font-mono text-[11.5px]', pillTone[p.cls])}>{p.label}</span>
+    <button type="button" class="shrink-0 cursor-copy rounded border-0 bg-muted px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-inherit hover:ring-1 hover:ring-border" title={t('viewer.copyValue')} onclick={() => copy(row.method)}>{row.method}</button>
+    <button type="button" class={cn('shrink-0 cursor-copy rounded border-0 px-1.5 py-0.5 font-mono text-[11.5px] hover:ring-1 hover:ring-border', pillTone[p.cls])} title={t('viewer.copyValue')} onclick={() => copy(row.status ? String(row.status) : p.label)}>{p.label}</button>
     {#if flow?.protocol}<span class="font-mono text-[11px] text-faint" title={t('detail.protocol')}>{flow.protocol === 'HTTP/2.0' ? 'h2' : flow.protocol}</span>{/if}
     {#if pending}<span class="size-2.5 animate-spin rounded-full border-2 border-border border-t-primary" aria-label={t('detail.loading')}></span>{/if}
-    <span class="min-w-0 flex-1 font-mono text-[13px] break-all select-text" title={flow?.tags?.original_url ? t('detail.mappedFrom', { url: flow.tags.original_url }) : row.url}>{row.url}</span>
+    <!-- Click copies, like body and header values; a drag still selects part of it. -->
+    <span class="min-w-0 flex-1"><span class="cursor-copy rounded-[3px] font-mono text-[13px] break-all select-text hover:bg-neutral-bg" role="button" tabindex="0" title={flow?.tags?.original_url ? t('detail.mappedFrom', { url: flow.tags.original_url }) : t('viewer.copyValue')} onclick={() => !getSelection()?.toString() && copy(row.url)} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), copy(row.url))}>{row.url}</span></span>
     {#if flow?.tags?.rewritten}<span class="shrink-0 text-xs text-accent-foreground">{t('detail.rewritten', { phase: flow.tags.rewritten })}</span>{/if}
     <Button variant="ghost" size="icon-sm" class="shrink-0 text-muted-foreground" aria-label={t('detail.close')} onclick={onclose}><XIcon /></Button>
   </div>

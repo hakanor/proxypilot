@@ -305,11 +305,6 @@
     }
   }
 
-  async function setSSL(mode: SSLPolicy['mode']) {
-    if (!ssl) return;
-    ssl = await api.setSSLPolicy({ ...ssl, mode });
-  }
-
   async function addBypass(host: string) {
     const p = ssl ?? (await api.sslPolicy());
     if (p.denylist.includes(host)) return;
@@ -472,7 +467,6 @@
     onexport={exportFlows}
     onimport={importFile}
     visibleCount={visible.length}
-    onssl={setSSL}
     onssllist={() => (sslListOpen = true)}
     ontheme={() => {
       theme = theme === 'dark' ? 'light' : 'dark';

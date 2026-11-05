@@ -70,8 +70,9 @@ func (d *Daemon) status() api.StatusInfo {
 		CAFingerprint: d.CA.Fingerprint(), Session: d.Store.CurrentSession(),
 		Subscribers: d.Bus.Subscribers(), Version: version.Version, MaxEntries: d.Config.Store.MaxEntries, DataDir: d.Config.DataDir,
 		ActiveRules: d.Rules.Active(), PendingBreakpoints: d.Breakpoints.Count(),
-		NoCaching: d.NoCache.Enabled(),
-		Throttle:  d.throttleName(),
+		NoCaching:     d.NoCache.Enabled(),
+		Throttle:      d.throttleName(),
+		UpstreamProxy: d.Proxy.UpstreamHost(),
 	}
 }
 
@@ -108,6 +109,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	}
 	if saved, ok := loadSSLPolicy(cfg.DataDir); ok {
 		d.Policy = proxy.NewSSLPolicy(saved.Mode, saved.Allowlist, saved.Denylist)
+		d.Policy.SetFavorites(saved.Favorites)
 	} else {
 		d.Policy = proxy.NewSSLPolicy(mode, cfg.SSL.Allowlist, cfg.SSL.Denylist)
 	}
@@ -121,6 +123,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	d.Clients = clients.New(cfg.DataDir, d.Bus, capture.ClientLabel)
 	rec.Names = d.Clients.Name
 	devs := newDevices(d.CA, cfg)
+	term := &terminator{d: d, devs: devs, quit: make(chan struct{})}
 	icons := appicon.New(filepath.Join(cfg.DataDir, "icons"))
 	rec.Origin = newOriginFinder(devs.Sim, icons).Origin
 	if d.Rules, err = rules.New(cfg.DataDir, d.Bus, log); err != nil {
@@ -138,7 +141,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	d.Repeater = &repeat.Repeater{Store: d.Store, Hooks: hooks, Bypass: proxy.Chain{d.Clients, rec}}
 	d.API = api.New(api.Deps{
 		Store: d.Store, Bus: d.Bus, CA: d.CA, Policy: d.Policy, SavePolicy: d.saveSSLPolicy, Token: d.Token, Log: log,
-		Settings: newSettings(cfg.DataDir, cfg.Store.MaxDiskMB, d.Store, rec), Status: d.status, Version: version.Version, Recorder: rec, Rules: d.Rules, Breakpoints: d.Breakpoints, Clients: d.Clients, Repeater: d.Repeater, Chrome: d.Chrome, DataDir: cfg.DataDir, Devices: devs, AppIcon: icons.PNG, NoCache: noCacheSwitch{d}, Throttle: throttleSwitch{d},
+		Settings: newSettings(cfg.DataDir, cfg.Store.MaxDiskMB, d.Store, rec), Status: d.status, Version: version.Version, Recorder: rec, Rules: d.Rules, Breakpoints: d.Breakpoints, Clients: d.Clients, Repeater: d.Repeater, Chrome: d.Chrome, DataDir: cfg.DataDir, Devices: devs, AppIcon: icons.PNG, NoCache: noCacheSwitch{d}, Throttle: throttleSwitch{d}, Terminate: func(ctx context.Context, bp bool) (any, error) { return term.Terminate(ctx, bp) },
 		Redact: redact.New(cfg.Redact.Headers...),
 	}, api.Options{Addr: cfg.API.Listen, UnsafeRemote: opts.UnsafeRemoteAPI})
 	if err := d.API.Listen(); err != nil {
@@ -160,6 +163,10 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 		Unrecorded:    d.API.IsAPIAddress,
 		DisableH2:     cfg.Proxy.DisableH2,
 	})
+	if err := d.Proxy.SetUpstream(cfg.Proxy.Upstream, cfg.Proxy.UpstreamBypass); err != nil {
+		ln.Close()
+		return fmt.Errorf("upstream proxy: %w", err)
+	}
 	d.Repeater.Proxy = d.Proxy
 	d.API.SetLAN(d.lan())
 
@@ -171,6 +178,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	defer cancel()
 	go d.Store.RunRetention(runCtx, 30*time.Second)
 	go d.Rules.Run(runCtx)
+	go d.refreshFavoriteHosts(runCtx, 5*time.Second)
 
 	proxyErr := make(chan error, 1)
 	go func() { proxyErr <- d.Proxy.Serve(runCtx, ln) }()
@@ -196,6 +204,7 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 
 	select {
 	case <-ctx.Done():
+	case <-term.quit:
 	case err := <-proxyErr:
 		if err != nil {
 			return err

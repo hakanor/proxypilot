@@ -37,6 +37,10 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/pins", s.handlePins)
 	mux.HandleFunc("PUT /api/v1/flows/{id}/pin", s.handleSetPin(true))
 	mux.HandleFunc("DELETE /api/v1/flows/{id}/pin", s.handleSetPin(false))
+	mux.HandleFunc("GET /api/v1/popular", s.handlePopular)
+	mux.HandleFunc("POST /api/v1/terminate", s.handleTerminate)
+	mux.HandleFunc("DELETE /api/v1/popular", s.handleClearPopular)
+	mux.HandleFunc("POST /api/v1/flows/{id}/popular", s.handleBumpPopular)
 	mux.HandleFunc("GET /api/v1/ssl-policy", s.handleGetPolicy)
 	mux.HandleFunc("PUT /api/v1/ssl-policy", s.handlePutPolicy)
 	mux.HandleFunc("DELETE /api/v1/ssl-policy/learned/{host}", s.handleForgetTunnel)
@@ -381,6 +385,8 @@ type policyUpdate struct {
 	Mode      string   `json:"mode"`
 	Allowlist []string `json:"allowlist"`
 	Denylist  []string `json:"denylist"`
+	// IncludeFavorites is optional so older clients keep the current value.
+	IncludeFavorites *bool `json:"include_favorites"`
 }
 
 func (s *Server) handlePutPolicy(w http.ResponseWriter, r *http.Request) {
@@ -397,6 +403,9 @@ func (s *Server) handlePutPolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.deps.Policy.Set(mode, u.Allowlist, u.Denylist)
+	if u.IncludeFavorites != nil {
+		s.deps.Policy.SetFavorites(*u.IncludeFavorites)
+	}
 	snap := s.deps.Policy.Snapshot()
 	if s.deps.SavePolicy != nil {
 		s.deps.SavePolicy(snap)
@@ -462,6 +471,9 @@ func (s *Server) handlePins(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSetPin(on bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := s.deps.Store.SetPin(r.Context(), r.PathValue("id"), on)
+		if err == nil && on {
+			_ = s.deps.Store.BumpPopularFlow(r.Context(), r.PathValue("id"))
+		}
 		if errors.Is(err, store.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "flow not found")
 			return
@@ -472,6 +484,69 @@ func (s *Server) handleSetPin(on bool) http.HandlerFunc {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+// handleTerminate: POST /terminate {"delete_breakpoint_rules": true} cleans up and stops the daemon.
+func (s *Server) handleTerminate(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Terminate == nil {
+		writeError(w, http.StatusNotImplemented, "not_available", "terminate is not available")
+		return
+	}
+	var in struct {
+		DeleteBreakpointRules bool `json:"delete_breakpoint_rules"`
+	}
+	if r.ContentLength != 0 {
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<10)).Decode(&in); err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", `expected {"delete_breakpoint_rules": true|false}`)
+			return
+		}
+	}
+	res, err := s.deps.Terminate(r.Context(), in.DeleteBreakpointRules)
+	out := map[string]any{"stopping": true, "result": res}
+	if err != nil {
+		out["warning"] = err.Error() // the daemon stops anyway
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// handlePopular: GET /popular?limit=10&paths=5, the hosts the user works on most.
+func (s *Server) handlePopular(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	paths, _ := strconv.Atoi(r.URL.Query().Get("paths"))
+	if limit <= 0 {
+		limit = 10
+	}
+	if paths <= 0 {
+		paths = 5
+	}
+	hosts, err := s.deps.Store.Popular(r.Context(), limit, paths)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"hosts": hosts})
+}
+
+func (s *Server) handleClearPopular(w http.ResponseWriter, r *http.Request) {
+	if err := s.deps.Store.ClearPopular(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleBumpPopular: the UI calls it when the user opens a flow.
+func (s *Server) handleBumpPopular(w http.ResponseWriter, r *http.Request) {
+	err := s.deps.Store.BumpPopularFlow(r.Context(), r.PathValue("id"))
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "not_found", "flow not found")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) handleGetSettings(w http.ResponseWriter, r *http.Request) {

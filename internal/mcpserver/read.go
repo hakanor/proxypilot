@@ -135,18 +135,41 @@ func (s *Server) registerRead() {
 	ro := mcp.WithReadOnlyHintAnnotation(true)
 
 	s.add(mcp.NewTool("get_status",
-		mcp.WithDescription("Daemon state: proxy address, flow count, active rules, paused breakpoints, whether recording."),
+		mcp.WithDescription("Daemon state: proxy address, flow count, active rules, paused breakpoints, whether recording, and which HTTPS hosts are decrypted (others show no headers or bodies)."),
 		ro,
 	), func(ctx context.Context, k *conn, _ mcp.CallToolRequest) (any, error) {
 		st, err := k.c.Status(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{
+		out := map[string]any{
 			"running": st.Running, "proxy": st.ProxyAddr, "flows": st.Flows, "recording": st.Recording,
 			"active_rules": st.ActiveRules, "paused_breakpoints": st.PendingBreakpoints, "version": st.Version,
 			"you": s.owner, "read_only": s.opts.ReadOnly,
-		}, nil
+		}
+		// Tunneled hosts show no headers or bodies; say which ones are decrypted.
+		if p, err := k.c.SSLPolicy(ctx); err == nil {
+			d := map[string]any{"mode": p.Mode}
+			if p.Mode == "allowlist" {
+				d["allowlist"], d["also_popular_and_pinned"] = p.Allowlist, p.Favorites
+			} else if p.Mode == "all" {
+				d["never_decrypted"] = p.Denylist
+			}
+			out["decrypt"] = d
+		}
+		return out, nil
+	})
+
+	s.add(mcp.NewTool("popular_hosts",
+		mcp.WithDescription("The hosts the user works on most (opens, pins, adds rules for), each with its top paths. Look here first to know which API matters to the user."),
+		mcp.WithNumber("limit", mcp.Description("Hosts to return"), mcp.DefaultNumber(5)),
+		ro,
+	), func(ctx context.Context, k *conn, req mcp.CallToolRequest) (any, error) {
+		hosts, err := k.c.Popular(ctx, req.GetInt("limit", 5), 5)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"hosts": hosts}, nil
 	})
 
 	s.add(mcp.NewTool("summarize_traffic",

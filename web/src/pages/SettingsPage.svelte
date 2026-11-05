@@ -5,6 +5,7 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import { Textarea } from '$lib/components/ui/textarea/index.js';
+  import TerminateDialog from '../components/TerminateDialog.svelte';
 
   let disk = $state(0);
   let hosts = $state('');
@@ -12,6 +13,7 @@
   let blocks = $state<Rule[]>([]);
   let newBlock = $state('');
   let message = $state('');
+  let terminating = $state(false);
 
   const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
   const fail = (e: unknown) => (message = e instanceof Error ? e.message : String(e));
@@ -98,5 +100,12 @@
         <p class="m-0 text-faint">{t('settings.noBlocks')}</p>
       {/each}
     </section>
+
+    <section class="flex flex-col gap-2 rounded-lg border border-err/40 p-4">
+      <h2 class="m-0 text-sm font-semibold text-err">{t('settings.danger')}</h2>
+      <p class="m-0 text-faint">{t('settings.dangerHint')}</p>
+      <div><Button variant="destructive" onclick={() => (terminating = true)}>{t('settings.terminate')}</Button></div>
+    </section>
   </div>
 </main>
+{#if terminating}<TerminateDialog onclose={() => (terminating = false)} />{/if}

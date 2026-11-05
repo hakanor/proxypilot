@@ -120,6 +120,9 @@ export interface SSLPolicy {
   denylist: string[];
   /** Hosts tunneled for this run: host → reason (pinning, mTLS). */
   learned_tunnels?: Record<string, string>;
+  /** Allowlist mode: also decrypt the popular and pinned hosts (listed in favorite_hosts). */
+  include_favorites?: boolean;
+  favorite_hosts?: string[];
 }
 
 export interface DiffChange {
@@ -518,10 +521,15 @@ export const api = {
   settings: () => call<Settings>('GET', '/settings'),
   setSettings: (s: Settings) => call<Settings>('PUT', '/settings', s),
   pins: () => call<{ ids: string[] }>('GET', '/pins'),
+  popular: () => call<{ hosts: { host: string; hits: number; paths: { path: string; hits: number }[] }[] }>('GET', '/popular?limit=8&paths=3'),
+  terminate: (deleteBreakpointRules: boolean) =>
+    call<{ stopping: boolean; warning?: string }>('POST', '/terminate', { delete_breakpoint_rules: deleteBreakpointRules }),
+  clearPopular: () => call<void>('DELETE', '/popular'),
+  bumpPopular: (id: string) => call<void>('POST', `/flows/${id}/popular`),
   setPin: (id: string, on: boolean) => call<void>(on ? 'PUT' : 'DELETE', `/flows/${id}/pin`),
   sslPolicy: () => call<SSLPolicy>('GET', '/ssl-policy'),
   setSSLPolicy: (p: SSLPolicy) =>
-    call<SSLPolicy>('PUT', '/ssl-policy', { mode: p.mode, allowlist: p.allowlist, denylist: p.denylist }),
+    call<SSLPolicy>('PUT', '/ssl-policy', { mode: p.mode, allowlist: p.allowlist, denylist: p.denylist, include_favorites: !!p.include_favorites }),
   diff: (a: string, b: string) => call<FlowDiff>('GET', `/diff?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
   forgetTunnel: (host: string) => call<SSLPolicy>('DELETE', `/ssl-policy/learned/${encodeURIComponent(host)}`),
 };

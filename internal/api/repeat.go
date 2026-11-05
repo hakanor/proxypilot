@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/hakanor/proxypilot/internal/repeat"
 	"github.com/hakanor/proxypilot/internal/store"
@@ -71,6 +72,7 @@ func (s *Server) handleRepeat(w http.ResponseWriter, r *http.Request) {
 		repeatError(w, err)
 		return
 	}
+	_ = s.deps.Store.BumpPopularFlow(r.Context(), id)
 	writeJSON(w, http.StatusOK, sum)
 }
 
@@ -143,6 +145,9 @@ func (s *Server) handleCompose(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		repeatError(w, err)
 		return
+	}
+	if u, err := url.Parse(req.URL); err == nil {
+		_ = s.deps.Store.BumpPopular(r.Context(), u.Hostname(), u.Path)
 	}
 	writeJSON(w, http.StatusOK, sum)
 }

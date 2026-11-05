@@ -40,6 +40,9 @@ type ProxyConfig struct {
 	Listen string `yaml:"listen"`
 	// DisableH2 keeps intercepted traffic on HTTP/1.1 on both sides.
 	DisableH2 bool `yaml:"disable_h2"`
+	// Upstream sends outgoing traffic through another HTTP proxy ("http://user:pass@host:port").
+	Upstream       string   `yaml:"upstream"`
+	UpstreamBypass []string `yaml:"upstream_bypass"`
 }
 
 type APIConfig struct {
@@ -203,6 +206,7 @@ func applyEnv(cfg *Config, env Env) error {
 	}
 	str("PROXYPILOT_PROXY_LISTEN", &cfg.Proxy.Listen)
 	str("PROXYPILOT_API_LISTEN", &cfg.API.Listen)
+	str("PROXYPILOT_UPSTREAM_PROXY", &cfg.Proxy.Upstream)
 	str("PROXYPILOT_SSL_MODE", &cfg.SSL.Mode)
 	str("PROXYPILOT_LOG_LEVEL", &cfg.Log.Level)
 	str("PROXYPILOT_LOG_FORMAT", &cfg.Log.Format)

@@ -44,3 +44,21 @@ func TestSSLPolicyLearnedAndDeny(t *testing.T) {
 		t.Fatalf("duplicate deny entries: %d", n)
 	}
 }
+
+func TestSSLPolicyFavorites(t *testing.T) {
+	p := NewSSLPolicy(ModeAllowlist, []string{"*.listed.com"}, []string{"denied.com"})
+	p.SetFavoriteHosts([]string{"Popular.com", "denied.com"})
+	if p.ShouldIntercept("popular.com:443") {
+		t.Fatal("favorites are off: popular.com must tunnel")
+	}
+	p.SetFavorites(true)
+	for host, want := range map[string]bool{"popular.com:443": true, "a.listed.com:443": true, "denied.com:443": false, "other.com:443": false} {
+		if got := p.ShouldIntercept(host); got != want {
+			t.Errorf("%s: got %v, want %v", host, got, want)
+		}
+	}
+	p.Set(ModeAll, nil, nil)
+	if !p.ShouldIntercept("other.com:443") {
+		t.Fatal("mode all intercepts everything")
+	}
+}

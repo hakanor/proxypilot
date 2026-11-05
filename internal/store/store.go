@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS bodies (
 	PRIMARY KEY (flow_id, side)
 );
 CREATE TABLE IF NOT EXISTS pins (flow_id TEXT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS popular (host TEXT NOT NULL, path TEXT NOT NULL, hits INTEGER NOT NULL, last_at TEXT NOT NULL, PRIMARY KEY (host, path));
 `
 
 // Open creates or opens <dir>/proxypilot.db and <dir>/bodies/.

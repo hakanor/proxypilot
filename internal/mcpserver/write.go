@@ -133,7 +133,7 @@ func (s *Server) registerWrite() {
 	s.add(mcp.NewTool("add_rewrite",
 		mcp.WithDescription("Edit matching traffic in flight. Steps run in order. Types: set_header/add_header {name,value}, remove_header {name}, "+
 			"set_query {name,value} / remove_query {name} (request), replace_body {pattern,value,regex}, json_set {path:\"$.user.isPremium\", value:\"true\"} (value is JSON text), "+
-			"json_remove {path}, set_status {status} (response), set_url {value} / set_path {value} (request). Compressed bodies are decoded first."),
+			"json_remove {path}, set_status {status} (response), set_url {value} / set_path {value} (request), delay {value:\"2s\"} (hold the request or response, up to 1m; to test slow endpoints and timeouts). Compressed bodies are decoded first."),
 		mcp.WithString("url", mcp.Required(), mcp.Description("URL pattern with * wildcards")),
 		mcp.WithString("phase", mcp.Enum("request", "response", "both"), mcp.DefaultString("response")),
 		mcp.WithArray("steps", mcp.Required(), mcp.Description("Ordered steps, e.g. [{\"type\":\"json_set\",\"path\":\"$.user.isPremium\",\"value\":\"true\"}]")),

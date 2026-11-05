@@ -13,6 +13,11 @@ import (
 )
 
 // doJSON sends body (if any) as JSON and decodes the response into out (if any).
+// Do sends a JSON request and decodes the JSON answer into out (nil: ignored).
+func (c *Client) Do(ctx context.Context, method, path string, body, out any) error {
+	return c.doJSON(ctx, method, path, nil, body, out)
+}
+
 func (c *Client) doJSON(ctx context.Context, method, path string, q url.Values, body, out any) error {
 	var r io.Reader
 	if body != nil {

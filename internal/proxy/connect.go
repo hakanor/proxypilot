@@ -74,7 +74,7 @@ func (s *Server) tunnel(w http.ResponseWriter, r *http.Request, target string) {
 		hooks = NopHooks{}
 	}
 
-	up, err := (&net.Dialer{Timeout: 15 * time.Second}).DialContext(r.Context(), "tcp", target)
+	up, err := s.dial(r.Context(), target)
 	if err != nil {
 		f.ErrorKind, f.Err = classifyUpstreamErr(err), err
 		f.Timing.Total = time.Since(f.Started)

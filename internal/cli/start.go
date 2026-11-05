@@ -19,7 +19,7 @@ import (
 const envDetached = "PROXYPILOT_DETACHED"
 
 func newStartCmd(app *App) *cobra.Command {
-	var listen string
+	var listen, upstream string
 	var detach, unsafeRemote, disableH2 bool
 	cmd := &cobra.Command{
 		Use:   "start",
@@ -28,6 +28,9 @@ func newStartCmd(app *App) *cobra.Command {
 			cfg := app.Config
 			if cmd.Flags().Changed("proxy-listen") {
 				cfg.Proxy.Listen = listen
+			}
+			if cmd.Flags().Changed("upstream-proxy") {
+				cfg.Proxy.Upstream = upstream
 			}
 			if disableH2 {
 				cfg.Proxy.DisableH2 = true
@@ -59,6 +62,7 @@ func newStartCmd(app *App) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&listen, "proxy-listen", "", "proxy listen address (default 127.0.0.1:9090; 0.0.0.0:9090 for devices)")
+	cmd.Flags().StringVar(&upstream, "upstream-proxy", "", "send outgoing traffic through this HTTP proxy (http://user:pass@host:port)")
 	cmd.Flags().BoolVar(&detach, "detach", false, "run in the background")
 	cmd.Flags().BoolVar(&disableH2, "disable-h2", false, "speak only HTTP/1.1 on intercepted connections (if an app misbehaves with HTTP/2)")
 	cmd.Flags().BoolVar(&unsafeRemote, "unsafe-remote-api", false, "allow the control API on a non-loopback address (dangerous)")

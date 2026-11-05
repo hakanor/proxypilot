@@ -683,6 +683,8 @@ Usage:
 Flags:
       --detach                run in the background
       --disable-h2            speak only HTTP/1.1 on intercepted connections (if an app misbehaves with HTTP/2)
+      --upstream-proxy string send outgoing traffic through this HTTP proxy (http://user:pass@host:port);
+                              localhost, private IPs and proxy.upstream_bypass go direct. Env: PROXYPILOT_UPSTREAM_PROXY
   -h, --help                  help for start
       --proxy-listen string   proxy listen address (default 127.0.0.1:9090; 0.0.0.0:9090 for devices)
       --unsafe-remote-api     allow the control API on a non-loopback address (dangerous)

@@ -76,7 +76,7 @@ func (s *Server) drop(k *conn) {
 const instructions = `ProxyPilot is an HTTP(S)/WebSocket debugging proxy. Use it to see what an app really sends and receives.
 
 Recommended flow:
-1. summarize_traffic first: it groups failures and names the slowest request, so you rarely need the full list.
+1. popular_hosts and summarize_traffic first: popular_hosts names the APIs the user works on most; summarize_traffic groups failures and names the slowest request, so you rarely need the full list.
 2. list_requests / search_traffic to find a flow (one line each; ids are short), then get_request. For big JSON bodies pass path (e.g. $.items[0]) instead of reading it all.
 3. To check a change: wait_for_request (start it, trigger the action in the app, it returns the flow).
 4. To mock: add_map_local. To edit traffic: add_rewrite. To point at another server: add_map_remote. To intercept: set_breakpoint, wait_for_breakpoint, resume_breakpoint.

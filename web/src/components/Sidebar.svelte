@@ -1,5 +1,9 @@
 <script lang="ts">
   import { t } from '../lib/i18n';
+  import { onMount } from 'svelte';
+  import { api } from '../lib/api';
+  import Flame from '@lucide/svelte/icons/flame';
+  import XIcon from '@lucide/svelte/icons/x';
   import HoverTip from './HoverTip.svelte';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import PanelLeftClose from '@lucide/svelte/icons/panel-left-close';
@@ -90,7 +94,7 @@
     app?: string;
   }
 
-  type Icon = 'mac' | 'sim' | 'android' | 'browser' | 'tool' | 'device' | 'app' | 'host' | 'domain';
+  type Icon = 'mac' | 'sim' | 'android' | 'browser' | 'tool' | 'device' | 'app' | 'host' | 'domain' | 'popular';
 
   function add(map: Map<string, Node>, key: string, label: string, v: View, icon: Icon, r: Row) {
     let n = map.get(key);
@@ -184,6 +188,28 @@
   ]);
 
   let tip: HoverTip;
+
+  // Popular: hosts the user opens, pins and writes rules for (counted by the daemon).
+  let popular = $state<Node[]>([]);
+  async function loadPopular() {
+    try {
+      popular = (await api.popular()).hosts.map((h) => ({
+        key: 'pop:' + h.host, label: h.host, count: h.hits, err: false, children: [], icon: 'popular' as Icon,
+        view: { kind: 'domain', value: rootDomain(h.host), host: h.host } as View,
+      }));
+    } catch {
+      /* older daemon */
+    }
+  }
+  onMount(() => {
+    loadPopular();
+    const id = setInterval(loadPopular, 15_000);
+    return () => clearInterval(id);
+  });
+  async function clearPopular() {
+    await api.clearPopular().catch(() => {});
+    loadPopular();
+  }
 </script>
 
 <HoverTip bind:this={tip} />
@@ -199,6 +225,7 @@
   {:else if icon === 'device'}<Monitor class={cls} />
   {:else if icon === 'app'}<AppWindow class={cls} />
   {:else if icon === 'domain'}<Globe class={cls} />
+  {:else if icon === 'popular'}<Flame class={cn(cls, 'text-warn')} />
   {:else}<Link2 class={cn(cls, 'opacity-70')} />
   {/if}
 {/snippet}
@@ -274,6 +301,10 @@
       {@render section(t('sidebar.favorites'))}
       {@render flat(t('sidebar.allTraffic'), ArrowRightLeft, { kind: 'all' }, total)}
       {@render flat(t('sidebar.pinned'), Star, { kind: 'pinned' }, pinnedCount)}
+      {#if popular.length && !q}
+        <div class="group/pop flex items-center">{@render section(t('sidebar.popular'))}<span class="flex-1"></span><button type="button" class="mt-3 mr-1 mb-0.5 flex size-5 items-center justify-center rounded border-0 bg-transparent p-0 text-faint opacity-0 group-hover/pop:opacity-100 hover:text-foreground focus-visible:opacity-100" title={t('sidebar.clearPopular')} aria-label={t('sidebar.clearPopular')} onclick={clearPopular}><XIcon class="size-3.5" /></button></div>
+        {#each popular as n (n.key)}{@render nodeRow(n, 0)}{/each}
+      {/if}
       {#if sims.length}
         {@render section(t('sidebar.simulators'))}
         {#each sims as n (n.key)}{@render nodeRow(n, 0)}{/each}

@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,7 +104,29 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 		ruleError(w, err)
 		return
 	}
+	// Every rule counts toward Popular, also the ones an agent adds over MCP.
+	if !created.Match.Regex {
+		if host, path := patternHostPath(created.Match.URL); host != "" {
+			_ = s.deps.Store.BumpPopular(r.Context(), host, path)
+		}
+	}
 	writeJSON(w, http.StatusCreated, created)
+}
+
+// patternHostPath reads host and path from a wildcard URL pattern such as
+// "https://api.x.com/users/*"; a wildcard host gives "".
+func patternHostPath(pattern string) (string, string) {
+	if pattern == "" {
+		return "", ""
+	}
+	if !strings.Contains(pattern, "://") {
+		pattern = "http://" + pattern
+	}
+	u, err := url.Parse(pattern)
+	if err != nil || strings.Contains(u.Host, "*") {
+		return "", ""
+	}
+	return u.Hostname(), strings.TrimRight(strings.TrimSuffix(u.Path, "*"), "/")
 }
 
 func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request) {

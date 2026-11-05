@@ -3,6 +3,7 @@ package proxy
 import (
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -23,6 +24,9 @@ type SSLPolicy struct {
 	allow   []string
 	deny    []string
 	learned map[string]string // host → reason (e.g. upstream requires client cert)
+	// favorites: in allowlist mode, also intercept the popular and pinned hosts (kept in auto by the daemon).
+	favorites bool
+	auto      map[string]bool
 }
 
 func NewSSLPolicy(mode SSLMode, allow, deny []string) *SSLPolicy {
@@ -54,6 +58,27 @@ type PolicySnapshot struct {
 	Allowlist []string          `json:"allowlist"`
 	Denylist  []string          `json:"denylist"`
 	Learned   map[string]string `json:"learned_tunnels"`
+	Favorites bool              `json:"include_favorites"`
+	// FavoriteHosts: the popular and pinned hosts the allowlist mode adds right now.
+	FavoriteHosts []string `json:"favorite_hosts,omitempty"`
+}
+
+// SetFavorites turns the popular+pinned hosts on or off for the allowlist mode.
+func (p *SSLPolicy) SetFavorites(on bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.favorites = on
+}
+
+// SetFavoriteHosts replaces the popular+pinned host set (exact host names).
+func (p *SSLPolicy) SetFavoriteHosts(hosts []string) {
+	m := make(map[string]bool, len(hosts))
+	for _, h := range normalizePatterns(hosts) {
+		m[h] = true
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.auto = m
 }
 
 func (p *SSLPolicy) Snapshot() PolicySnapshot {
@@ -63,7 +88,12 @@ func (p *SSLPolicy) Snapshot() PolicySnapshot {
 	for k, v := range p.learned {
 		l[k] = v
 	}
-	return PolicySnapshot{Mode: p.mode, Allowlist: append([]string{}, p.allow...), Denylist: append([]string{}, p.deny...), Learned: l}
+	fav := make([]string, 0, len(p.auto))
+	for h := range p.auto {
+		fav = append(fav, h)
+	}
+	sort.Strings(fav)
+	return PolicySnapshot{Mode: p.mode, Allowlist: append([]string{}, p.allow...), Denylist: append([]string{}, p.deny...), Learned: l, Favorites: p.favorites, FavoriteHosts: fav}
 }
 
 // ShouldIntercept takes "host:port" (or a bare host).
@@ -81,7 +111,7 @@ func (p *SSLPolicy) ShouldIntercept(hostport string) bool {
 	case ModeOff:
 		return false
 	case ModeAllowlist:
-		return matchAny(p.allow, host, port)
+		return matchAny(p.allow, host, port) || p.favorites && p.auto[host]
 	default:
 		return true
 	}
