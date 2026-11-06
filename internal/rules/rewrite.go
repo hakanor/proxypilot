@@ -2,6 +2,7 @@ package rules
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -160,7 +161,8 @@ type message struct {
 	header http.Header
 	body   []byte
 	status int
-	url    *url.URL // request only
+	url    *url.URL        // request only
+	ctx    context.Context // ends when the client goes away; cuts a delay short
 }
 
 func (r *RewriteSpec) apply(m *message, request bool) error {
@@ -216,7 +218,14 @@ func (r *RewriteSpec) apply(m *message, request bool) error {
 				return err
 			}
 		case StepDelay:
-			time.Sleep(s.dur)
+			t := time.NewTimer(s.dur)
+			select {
+			case <-t.C:
+			case <-m.ctx.Done():
+				// The client left: stop holding; the proxy then fails the flow as client_aborted.
+				t.Stop()
+				return nil
+			}
 		case StepSetStatus:
 			if !request {
 				m.status = s.Status
@@ -270,7 +279,7 @@ func setBody(h http.Header, b []byte) (io.ReadCloser, int64) {
 
 // rewriteRequest edits req in place (the proxy sends this object).
 func (c *compiled) rewriteRequest(req *http.Request) error {
-	m := &message{header: req.Header, url: req.URL}
+	m := &message{header: req.Header, url: req.URL, ctx: req.Context()}
 	if c.rewrite.touchesBody() {
 		b, ok, err := readDecoded(req.Body, req.Header)
 		if err != nil {
@@ -295,7 +304,10 @@ func (c *compiled) rewriteRequest(req *http.Request) error {
 func (c *compiled) rewriteResponse(resp *http.Response) (*http.Response, error) {
 	out := *resp
 	out.Header = resp.Header.Clone()
-	m := &message{header: out.Header, status: resp.StatusCode}
+	m := &message{header: out.Header, status: resp.StatusCode, ctx: context.Background()}
+	if resp.Request != nil {
+		m.ctx = resp.Request.Context()
+	}
 	if c.rewrite.touchesBody() {
 		b, ok, err := readDecoded(resp.Body, resp.Header)
 		if err != nil {

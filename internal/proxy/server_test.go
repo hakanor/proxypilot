@@ -178,6 +178,27 @@ func TestUnreachableUpstream502(t *testing.T) {
 	}
 }
 
+func TestClientCancelIsClientAborted(t *testing.T) {
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+		}
+	}))
+	defer slow.Close()
+	hooks := newRecHooks()
+	_, pu := startProxy(t, Options{Hooks: hooks})
+	c := proxyClient(pu, nil)
+	c.Timeout = 100 * time.Millisecond
+	if _, err := c.Get(slow.URL); err == nil {
+		t.Fatal("expected the client to time out")
+	}
+	f := hooks.wait(t)
+	if f.ErrorKind != ErrClientAborted {
+		t.Fatalf("error kind = %s (%v)", f.ErrorKind, f.Err)
+	}
+}
+
 func TestProxyLoopRejected(t *testing.T) {
 	_, pu := startProxy(t, Options{})
 	resp, err := proxyClient(pu, nil).Get(pu.String() + "/")

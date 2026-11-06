@@ -13,9 +13,10 @@
     total: number;
     selected?: boolean;
     ruleCounts: Partial<Record<Rule['type'], number>>;
+    proxyAddr?: string;
     sslMode?: SSLPolicy['mode'];
   }
-  let { totalDown, totalUp, rateDown, rateUp, shown, total, selected = false, ruleCounts, sslMode }: Props = $props();
+  let { totalDown, totalUp, rateDown, rateUp, shown, total, selected = false, ruleCounts, proxyAddr, sslMode }: Props = $props();
   const ruleTypes: Rule['type'][] = ['map_local', 'breakpoint', 'rewrite', 'map_remote'];
 </script>
 
@@ -26,6 +27,7 @@
   <span class="font-mono tabular-nums" title={t('traffic.rateHint')}>{t('traffic.up', { rate: formatRate(rateUp) })}</span>
   <span>{t('traffic.session')} <span class="font-mono text-foreground">↓ {formatBytes(totalDown)} ↑ {formatBytes(totalUp)}</span></span>
   <span class="flex-1"></span>
+  {#if proxyAddr}<span class="inline-flex items-center gap-1.5 font-mono" title={t('toolbar.proxyUp', { addr: proxyAddr })}><span class="size-1.5 rounded-full bg-primary"></span>{proxyAddr}</span>{/if}
   {#each ruleTypes as k (k)}
     {#if ruleCounts[k]}
       <a href={href('rules')} class="rounded-full bg-neutral-bg px-2 py-px text-[11px] text-neutral-fg no-underline hover:text-foreground"

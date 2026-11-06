@@ -4,3 +4,6 @@
 .DS_Store
 *.test
 coverage.out
+
+# local iOS test app + Node server (temporary)
+/ios/

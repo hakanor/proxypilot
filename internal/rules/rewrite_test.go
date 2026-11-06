@@ -3,6 +3,7 @@ package rules
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -170,11 +171,27 @@ func TestRewriteDelay(t *testing.T) {
 			t.Fatalf("%s: %v", in, err)
 		}
 		start := time.Now()
-		if err := rw.apply(&message{header: http.Header{}}, false); err != nil {
+		if err := rw.apply(&message{header: http.Header{}, ctx: context.Background()}, false); err != nil {
 			t.Fatal(err)
 		}
 		if got := time.Since(start); got < want {
 			t.Errorf("%s: held %v, want at least %v", in, got, want)
 		}
+	}
+}
+
+func TestRewriteDelayStopsWhenClientLeaves(t *testing.T) {
+	rw, err := parseRewrite(steps(Step{Type: StepDelay, Value: "30s"}), PhaseBoth)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	if err := rw.apply(&message{header: http.Header{}, ctx: ctx}, true); err != nil {
+		t.Fatal(err)
+	}
+	if got := time.Since(start); got > 5*time.Second {
+		t.Errorf("delay held %v after the client left", got)
 	}
 }

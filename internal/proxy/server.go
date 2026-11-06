@@ -250,6 +250,9 @@ func (s *Server) forwardWith(h Hooks, w http.ResponseWriter, r *http.Request, sc
 	trace.apply(&f.Timing)
 	if err != nil {
 		f.ErrorKind = classifyUpstreamErr(err)
+		if r.Context().Err() != nil {
+			f.ErrorKind = ErrClientAborted // the client hung up first, the upstream is fine
+		}
 		f.Err = err
 		f.Timing.Total = time.Since(f.Started)
 		h.OnError(f, err)

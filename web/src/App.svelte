@@ -591,6 +591,7 @@
     total={traffic.rows.length}
     selected={!!selectedRow}
     {ruleCounts}
+    proxyAddr={status?.proxy_addr}
     sslMode={ssl?.mode}
   />
   </div>
