@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { markText } from '$lib/mark';
   import JsonNode from './JsonNode.svelte';
   import HexView from './HexView.svelte';
   import HeadersTable from './HeadersTable.svelte';
@@ -127,12 +128,12 @@
     return parseMultipart(text, body?.content_type ?? contentType ?? '').map((p) => [p.name, p.info]);
   });
   const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const reEsc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Wraps matches in <mark>, only inside text between tags so highlight spans stay intact.
+  // Wraps matches in <mark>, only inside text between tags so highlight spans stay intact;
+  // entities are decoded first so "amp" never matches inside "&amp;".
+  const unesc = (v: string) => v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
   function markHTML(html: string, q: string): string {
     if (!q) return html;
-    const re = new RegExp(reEsc(esc(q)), 'gi');
-    return html.replace(/(^|>)([^<]+)/g, (_, a: string, txt: string) => a + txt.replace(re, (m) => `<mark>${m}</mark>`));
+    return html.replace(/(^|>)([^<]+)/g, (_, a: string, txt: string) => a + markText(unesc(txt), q));
   }
   const rawText = $derived((head ? head + '\n\n' : '') + (isB64 ? (body?.size ? `<binary body, ${formatBytes(body.size)}>` : '') : text));
   const rawShown = $derived(active === 'raw' ? markHTML(esc(rawText), query) : '');
@@ -143,7 +144,7 @@
   let hitIndex = $state(0);
   let hitTotal = $state(0);
   function hits(): HTMLElement[] {
-    return viewEl ? [...viewEl.querySelectorAll<HTMLElement>('mark, .hit > .line')] : [];
+    return viewEl ? [...viewEl.querySelectorAll<HTMLElement>('mark')] : [];
   }
   function focusHit(i: number) {
     const list = hits();
@@ -263,13 +264,11 @@
     color: var(--text);
   }
   .body-view :global(mark) {
-    background: var(--warn-bg);
-    color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 28%, transparent);
+    color: inherit;
     border-radius: 2px;
-    box-shadow: 0 0 0 1px var(--warn);
   }
-  .body-view :global(mark.current),
-  .body-view :global(.line.current) {
+  .body-view :global(mark.current) {
     background: var(--warn);
     color: #111;
   }

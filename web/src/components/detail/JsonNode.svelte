@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { markText } from '$lib/mark';
   import { untrack } from 'svelte';
   import JsonNode from './JsonNode.svelte';
   import { t } from '../../lib/i18n';
@@ -26,9 +27,10 @@
 
   // Search expands every branch that contains a match.
   const q = $derived(query.toLowerCase());
-  const matchesSelf = $derived(
-    !!q && ((k !== undefined && String(k).toLowerCase().includes(q)) || (!isObj && String(value).toLowerCase().includes(q))),
-  );
+  const show = (v: unknown) => (typeof v === 'string' ? JSON.stringify(v) : String(v));
+  // Array indexes are not searched: "1" would light up every item.
+  const keyText = $derived(typeof k === 'string' ? k : '');
+  const matchesSelf = $derived(!!q && (keyText.toLowerCase().includes(q) || (!isObj && show(value).toLowerCase().includes(q))));
   $effect(() => {
     if (q && isObj && contains(value, q)) open = true;
   });
@@ -37,14 +39,13 @@
     if (budget.n-- <= 0) return false;
     if (v === null || typeof v !== 'object') return String(v).toLowerCase().includes(s);
     for (const [kk, vv] of Object.entries(v)) {
-      if (kk.toLowerCase().includes(s) || contains(vv, s, budget)) return true;
+      if ((!Array.isArray(v) && kk.toLowerCase().includes(s)) || contains(vv, s, budget)) return true;
     }
     return false;
   }
 
   const cls = (v: unknown) =>
     v === null ? 'h-null' : typeof v === 'string' ? 'h-str' : typeof v === 'number' ? 'h-num' : typeof v === 'boolean' ? 'h-bool' : '';
-  const show = (v: unknown) => (typeof v === 'string' ? JSON.stringify(v) : String(v));
   // Click copies what you see: a leaf as `"key": value`, an object or array as its JSON.
   // Alt+click copies the JSON path instead.
   function copyNode(e: MouseEvent) {
@@ -66,7 +67,7 @@
       title={t('viewer.copyJson')}
       onclick={copyNode}
       onkeydown={() => {}}
-    ><span class="h-key">{keyLabel}</span>{isArr ? '[' : '{'}
+    ><span class="h-key">{@html markText(keyLabel, typeof k === 'string' ? query : '')}</span>{isArr ? '[' : '{'}
       {#if !open}
         <span class="h-null">… {isArr ? t('viewer.items', { n: entries.length }) : t('viewer.keys', { n: entries.length })}</span>{isArr ? ']' : '}'}{last ? '' : ','}
       {:else}
@@ -94,7 +95,7 @@
       title={t('viewer.copyKeyValue')}
       onclick={copyNode}
       onkeydown={() => {}}
-    ><span class="h-key">{keyLabel}</span><span class={cls(value)}>{show(value)}</span>{last ? '' : ','}
+    ><span class="h-key">{@html markText(keyLabel, typeof k === 'string' ? query : '')}</span><span class={cls(value)}>{@html markText(show(value), query)}</span>{last ? '' : ','}
     </span>
   {/if}
 </div>
@@ -144,10 +145,6 @@
   }
   .line:hover {
     background: var(--neutral-bg);
-  }
-  .hit > .line {
-    background: var(--warn-bg);
-    box-shadow: inset 0 0 0 1px var(--warn);
   }
   .more {
     border: 0;
