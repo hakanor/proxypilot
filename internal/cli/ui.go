@@ -56,9 +56,11 @@ func newUICmd(app *App) *cobra.Command {
 }
 
 func openBrowser(u string) error {
-	name := "xdg-open"
-	if runtime.GOOS == "darwin" {
-		name = "open"
+	switch runtime.GOOS {
+	case "darwin":
+		return exec.Command("open", u).Start()
+	case "windows":
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", u).Start()
 	}
-	return exec.Command(name, u).Start()
+	return exec.Command("xdg-open", u).Start()
 }

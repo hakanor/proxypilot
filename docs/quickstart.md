@@ -8,7 +8,7 @@ From a release (macOS / Linux, checksum verified):
 curl -fsSL https://raw.githubusercontent.com/hakanor/proxypilot/main/install.sh | sh
 ```
 
-Homebrew: `brew install hakanor/tap/proxypilot`. From source (Go 1.26+, Node 20+): `make web build`, the binary is `bin/proxypilot`.
+Homebrew (macOS): `brew install hakanor/tap/proxypilot`. Linux: `curl -fsSL https://raw.githubusercontent.com/hakanor/proxypilot/main/install.sh | sh`. Windows: the `windows_amd64.zip` from GitHub Releases. From source (Go 1.26+, Node 20+): `make web build`, the binary is `bin/proxypilot`.
 
 ## 2. Start and open the UI
 

@@ -122,9 +122,9 @@ func newCACmd(app *App) *cobra.Command {
 
 // newTrustCmd builds `trust` (add=true) or `untrust`.
 func newTrustCmd(app *App, add bool) *cobra.Command {
-	use, short := "trust", "Trust the CA in the macOS System keychain"
+	use, short := "trust", "Trust the CA (macOS System keychain, Windows user store, Linux: prints the steps)"
 	if !add {
-		use, short = "untrust", "Remove the CA from the macOS System keychain"
+		use, short = "untrust", "Remove the CA from the system trust store"
 	}
 	return &cobra.Command{
 		Use:   use,
@@ -138,10 +138,10 @@ func newTrustCmd(app *App, add bool) *cobra.Command {
 			if !add {
 				cmds = r.UntrustCommands()
 			}
-			if runtime.GOOS != "darwin" {
+			if runtime.GOOS == "linux" {
 				return linuxTrustHint(app, r, add)
 			}
-			if os.Geteuid() != 0 {
+			if runtime.GOOS == "darwin" && os.Geteuid() != 0 {
 				lines := make([]string, len(cmds))
 				for i, c := range cmds {
 					lines[i] = "sudo " + shellJoin(c)
@@ -179,7 +179,7 @@ func linuxTrustHint(app *App, r *ca.RootCA, add bool) error {
 	if app.Flags.JSON {
 		return app.PrintJSON(map[string]any{"automatic": false, "commands": steps, "note": "Debian/Ubuntu; Fedora uses /etc/pki/ca-trust/source/anchors + update-ca-trust"})
 	}
-	app.Printf("Automatic trust is only supported on macOS. On Debian/Ubuntu run:\n\n  %s\n\nFedora/RHEL: copy to /etc/pki/ca-trust/source/anchors/ and run update-ca-trust.\n", strings.Join(steps, "\n  "))
+	app.Printf("Automatic trust is not supported on Linux. On Debian/Ubuntu run:\n\n  %s\n\nFedora/RHEL: copy to /etc/pki/ca-trust/source/anchors/ and run update-ca-trust.\nChrome and Firefox keep their own store: certutil -d sql:$HOME/.pki/nssdb -A -t C,, -n ProxyPilot -i <cert>\n", strings.Join(steps, "\n  "))
 	return nil
 }
 

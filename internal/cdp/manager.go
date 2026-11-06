@@ -102,6 +102,15 @@ func FindChrome(override string) (string, error) {
 			"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
 			"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
 			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge")
+	case "windows":
+		for _, dir := range []string{os.Getenv("ProgramFiles"), os.Getenv("ProgramFiles(x86)"), os.Getenv("LOCALAPPDATA")} {
+			if dir != "" {
+				cands = append(cands,
+					filepath.Join(dir, `Google\Chrome\Application\chrome.exe`),
+					filepath.Join(dir, `Microsoft\Edge\Application\msedge.exe`),
+					filepath.Join(dir, `BraveSoftware\Brave-Browser\Application\brave.exe`))
+			}
+		}
 	default:
 		for _, n := range []string{"google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"} {
 			if p, err := exec.LookPath(n); err == nil {

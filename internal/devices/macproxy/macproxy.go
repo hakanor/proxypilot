@@ -23,7 +23,7 @@ const BackupFile = "system-proxy-backup.json"
 var DefaultBypass = []string{"localhost", "127.0.0.1", "::1", "*.local", "169.254/16"}
 
 var (
-	ErrNotMac      = errors.New("system proxy control is only available on macOS")
+	ErrNotMac      = errors.New("system proxy control is not available on this system (macOS, Windows and GNOME on Linux are supported)")
 	ErrNoBackup    = errors.New("system proxy is not managed by ProxyPilot (no backup found)")
 	ErrNeedsAdmin  = errors.New("changing network settings requires an administrator")
 	ErrNoServices  = errors.New("no enabled network services found")
@@ -43,6 +43,7 @@ type Service struct {
 	Web    Proxy    `json:"web"`
 	Secure Proxy    `json:"secure"`
 	Bypass []string `json:"bypass"`
+	Mode   string   `json:"mode,omitempty"` // GNOME proxy mode (none, manual, auto), restored as is
 }
 
 // Status is the current state as seen by `system-proxy status`.
@@ -90,6 +91,15 @@ func (m *Manager) ns(ctx context.Context, args ...string) (string, error) {
 
 // Services lists enabled network services (disabled ones are marked with '*').
 func (m *Manager) Services(ctx context.Context) ([]string, error) {
+	switch m.GOOS {
+	case "windows":
+		return []string{winService}, nil
+	case "linux":
+		if _, err := m.Run.Run(ctx, "gsettings", "get", gnomeSchema, "mode"); err != nil {
+			return nil, ErrNotMac
+		}
+		return []string{gnomeService}, nil
+	}
 	out, err := m.ns(ctx, "-listallnetworkservices")
 	if err != nil {
 		return nil, err
@@ -142,6 +152,12 @@ func parseBypass(out string) []string {
 }
 
 func (m *Manager) read(ctx context.Context, name string) (Service, error) {
+	switch m.GOOS {
+	case "windows":
+		return m.winRead(ctx)
+	case "linux":
+		return m.gnomeRead(ctx)
+	}
 	s := Service{Name: name}
 	web, err := m.ns(ctx, "-getwebproxy", name)
 	if err != nil {
@@ -221,6 +237,12 @@ func splitTarget(target string) (string, int) {
 func (m *Manager) Commands(names []string, target string, extraBypass ...string) [][]string {
 	host, port := splitTarget(target)
 	bypass := append(append([]string{}, DefaultBypass...), extraBypass...)
+	switch m.GOOS {
+	case "windows":
+		return winCommands(host, port, bypass)
+	case "linux":
+		return gnomeCommands(host, port, bypass)
+	}
 	var cmds [][]string
 	for _, n := range names {
 		cmds = append(cmds,
@@ -255,10 +277,11 @@ func (m *Manager) On(ctx context.Context, target string, extraBypass ...string) 
 		return Status{}, err
 	}
 	for _, c := range m.Commands(names, target, extraBypass...) {
-		if _, err := m.ns(ctx, c[1:]...); err != nil {
+		if err := m.exec(ctx, c); err != nil {
 			return Status{}, err
 		}
 	}
+	settingsChanged()
 	return m.Status(ctx, target)
 }
 
@@ -268,8 +291,8 @@ func (m *Manager) Off(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	for _, c := range restoreCommands(bk.Services) {
-		if _, err := m.ns(ctx, c[1:]...); err != nil {
+	for _, c := range m.restoreCommands(bk.Services) {
+		if err := m.exec(ctx, c); err != nil {
 			// Services removed since the backup are skipped; anything else stops the restore.
 			if strings.Contains(err.Error(), "not a recognized network service") {
 				continue
@@ -277,7 +300,18 @@ func (m *Manager) Off(ctx context.Context) error {
 			return err
 		}
 	}
+	settingsChanged()
 	return os.Remove(m.backupPath())
+}
+
+// exec runs one command from Commands or RestoreCommands.
+func (m *Manager) exec(ctx context.Context, c []string) error {
+	if m.GOOS == "darwin" {
+		_, err := m.ns(ctx, c[1:]...)
+		return err
+	}
+	_, err := m.Run.Run(ctx, c[0], c[1:]...)
+	return err
 }
 
 // RestoreCommands returns the networksetup calls Off would run.
@@ -286,12 +320,18 @@ func (m *Manager) RestoreCommands() ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return restoreCommands(bk.Services), nil
+	return m.restoreCommands(bk.Services), nil
 }
 
 // restoreCommands re-applies saved servers and on/off states. networksetup has no way
 // to clear a server field, so a service that had none keeps ours, but disabled.
-func restoreCommands(services []Service) [][]string {
+func (m *Manager) restoreCommands(services []Service) [][]string {
+	switch m.GOOS {
+	case "windows":
+		return winRestore(services)
+	case "linux":
+		return gnomeRestore(services)
+	}
 	var cmds [][]string
 	for _, s := range services {
 		for _, kind := range []struct {

@@ -61,7 +61,7 @@ func quoteCmds(cmds [][]string, prefix string) []string {
 func newSystemProxyCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "system-proxy",
-		Short: "Point the macOS system proxy at ProxyPilot (on|off|status)",
+		Short: "Point the system proxy (macOS, Windows, GNOME) at ProxyPilot (on|off|status)",
 	}
 	status := func(sv *devices.Service, cmd *cobra.Command) error {
 		target, _ := app.proxyTarget()
@@ -87,7 +87,7 @@ func newSystemProxyCmd(app *App) *cobra.Command {
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "status",
-		Short: "Show the current macOS proxy settings",
+		Short: "Show the current system proxy settings",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			sv, err := app.devices()
 			if err != nil {

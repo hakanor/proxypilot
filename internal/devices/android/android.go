@@ -57,16 +57,25 @@ type ADB struct {
 }
 
 // Find locates adb: explicit path, $ANDROID_HOME, the default SDK location, then PATH.
+func adbExe() string {
+	if runtime.GOOS == "windows" {
+		return "adb.exe"
+	}
+	return "adb"
+}
+
 func Find(configured string) (string, error) {
 	cands := []string{configured}
 	for _, env := range []string{"ANDROID_HOME", "ANDROID_SDK_ROOT"} {
 		if v := os.Getenv(env); v != "" {
-			cands = append(cands, filepath.Join(v, "platform-tools", "adb"))
+			cands = append(cands, filepath.Join(v, "platform-tools", adbExe()))
 		}
 	}
 	if home, err := os.UserHomeDir(); err == nil {
 		if runtime.GOOS == "darwin" {
 			cands = append(cands, filepath.Join(home, "Library/Android/sdk/platform-tools/adb"))
+		} else if runtime.GOOS == "windows" {
+			cands = append(cands, filepath.Join(os.Getenv("LOCALAPPDATA"), `Android\Sdk\platform-tools\adb.exe`))
 		} else {
 			cands = append(cands, filepath.Join(home, "Android/Sdk/platform-tools/adb"))
 		}

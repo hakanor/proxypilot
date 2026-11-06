@@ -488,7 +488,7 @@
     "notBooted": "Boot the simulator first",
     "simNote": "The CA stays installed after the simulator shuts down. Restart the app after installing so it picks up the new trust.",
     "noSims": "No simulators found. Create one in Xcode → Window → Devices and Simulators.",
-    "sysProxy": "macOS system proxy",
+    "sysProxy": "System proxy",
     "on": "On",
     "off": "Off",
     "managed": "Managed by ProxyPilot since {time}",

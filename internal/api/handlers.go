@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"net/http"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -427,8 +428,16 @@ func (s *Server) handleCA(w http.ResponseWriter, _ *http.Request) {
 		"not_after":          c.NotAfter,
 		"cert_path":          s.deps.CA.CertPath(),
 		"trust":              s.deps.CA.TrustStatus(),
-		"trust_command":      "sudo " + execx.Quote(s.deps.CA.TrustCommand()[0], s.deps.CA.TrustCommand()[1:]...),
+		"trust_command":      trustCommand(s.deps.CA.TrustCommand()),
 	})
+}
+
+// trustCommand is what the UI tells the user to run; elsewhere than macOS the CLI does it (or prints the steps).
+func trustCommand(c []string) string {
+	if runtime.GOOS != "darwin" {
+		return "proxypilot trust"
+	}
+	return "sudo " + execx.Quote(c[0], c[1:]...)
 }
 
 func (s *Server) handleCACert(w http.ResponseWriter, r *http.Request) {

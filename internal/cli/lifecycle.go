@@ -15,7 +15,7 @@ func newStopCmd(app *App) *cobra.Command {
 	var keepProxy bool
 	cmd := &cobra.Command{
 		Use:   "stop",
-		Short: "Stop the running daemon (and restore the macOS system proxy if ProxyPilot set it)",
+		Short: "Stop the running daemon (and restore the system proxy if ProxyPilot set it)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			st, err := daemon.Running(app.Config.DataDir)
 			if errors.Is(err, daemon.ErrNotRunning) {
@@ -42,12 +42,12 @@ func newStopCmd(app *App) *cobra.Command {
 			}
 			app.Printf("Stopped (pid %d)\n", st.PID)
 			if restored {
-				app.Printf("Restored the previous macOS proxy settings.\n")
+				app.Printf("Restored the previous system proxy settings.\n")
 			}
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&keepProxy, "keep-system-proxy", false, "leave the macOS system proxy pointing at ProxyPilot")
+	cmd.Flags().BoolVar(&keepProxy, "keep-system-proxy", false, "leave the system proxy pointing at ProxyPilot")
 	return cmd
 }
 

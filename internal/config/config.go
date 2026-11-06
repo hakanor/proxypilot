@@ -172,6 +172,11 @@ func DefaultDataDir(env Env) (string, error) {
 	if runtime.GOOS == "darwin" {
 		return filepath.Join(home, "Library", "Application Support", "ProxyPilot"), nil
 	}
+	if runtime.GOOS == "windows" {
+		if v, ok := env("LOCALAPPDATA"); ok && v != "" {
+			return filepath.Join(v, "ProxyPilot"), nil
+		}
+	}
 	if v, ok := env("XDG_DATA_HOME"); ok && v != "" {
 		return filepath.Join(v, "proxypilot"), nil
 	}
