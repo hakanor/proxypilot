@@ -336,7 +336,7 @@ The client closed the connection after seeing the ProxyPilot certificate: the CA
 
 ## The Mac has no internet after ProxyPilot stopped
 
-The system proxy still points at the stopped daemon. \`proxypilot stop\` normally restores it; if the daemon crashed, run:
+The system proxy still points at the stopped daemon. \`proxypilot stop\` normally restores it, and after a restart or log out it is restored at the next login (ProxyPilot itself does not start again). If the daemon crashed, run:
 
 \`\`\`bash
 proxypilot system-proxy off

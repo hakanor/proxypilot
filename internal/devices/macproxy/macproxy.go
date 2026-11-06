@@ -68,10 +68,11 @@ type Manager struct {
 	Run     execx.Runner
 	DataDir string
 	GOOS    string // "darwin" in production; tests set it explicitly
+	BootDir string // where the restore-at-login hook goes; "" (tests) skips it
 }
 
 func New(dataDir string) *Manager {
-	return &Manager{Run: execx.OS{}, DataDir: dataDir, GOOS: goos}
+	return &Manager{Run: execx.OS{}, DataDir: dataDir, GOOS: goos, BootDir: defaultBootDir(goos)}
 }
 
 func (m *Manager) ns(ctx context.Context, args ...string) (string, error) {
@@ -282,6 +283,9 @@ func (m *Manager) On(ctx context.Context, target string, extraBypass ...string) 
 		}
 	}
 	settingsChanged()
+	if err := m.armBoot(ctx); err != nil {
+		return Status{}, fmt.Errorf("restore-at-login hook: %w", err)
+	}
 	return m.Status(ctx, target)
 }
 
@@ -289,6 +293,9 @@ func (m *Manager) On(ctx context.Context, target string, extraBypass ...string) 
 func (m *Manager) Off(ctx context.Context) error {
 	bk, err := m.readBackup()
 	if err != nil {
+		if errors.Is(err, ErrNoBackup) {
+			m.disarmBoot(ctx) // nothing to restore: a leftover hook must not run at every login
+		}
 		return err
 	}
 	for _, c := range m.restoreCommands(bk.Services) {
@@ -301,6 +308,7 @@ func (m *Manager) Off(ctx context.Context) error {
 		}
 	}
 	settingsChanged()
+	m.disarmBoot(ctx)
 	return os.Remove(m.backupPath())
 }
 

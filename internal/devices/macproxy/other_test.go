@@ -2,7 +2,11 @@ package macproxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -84,5 +88,39 @@ func TestGnomeProxy(t *testing.T) {
 	s, _ := m.gnomeRead(context.Background())
 	if s.Mode != "auto" || !reflect.DeepEqual(s.Bypass, []string{"localhost", "10.0.0.0/8"}) {
 		t.Fatalf("restored %+v", s)
+	}
+}
+
+func TestBootHook(t *testing.T) {
+	for _, goos := range []string{"darwin", "linux"} {
+		dir := t.TempDir()
+		var m *Manager
+		if goos == "darwin" {
+			m = &Manager{Run: newFake(), DataDir: t.TempDir(), GOOS: goos, BootDir: dir}
+		} else {
+			m = &Manager{Run: fakeKV{gnomeSchema + " mode": "'none'"}, DataDir: t.TempDir(), GOOS: goos, BootDir: dir}
+		}
+		if _, err := m.On(context.Background(), "127.0.0.1:9090"); err != nil {
+			t.Fatal(goos, err)
+		}
+		files, _ := filepath.Glob(filepath.Join(dir, bootName+".*"))
+		if len(files) != 1 {
+			t.Fatalf("%s: hook not written: %v", goos, files)
+		}
+		if goos == "darwin" {
+			if out, err := exec.Command("plutil", "-lint", files[0]).CombinedOutput(); err != nil && !errors.Is(err, exec.ErrNotFound) {
+				t.Fatalf("plist: %v %s", err, out)
+			}
+		}
+		b, _ := os.ReadFile(files[0])
+		if !strings.Contains(string(b), "system-proxy") || !strings.Contains(string(b), m.DataDir) {
+			t.Fatalf("%s: hook %s", goos, b)
+		}
+		if err := m.Off(context.Background()); err != nil {
+			t.Fatal(goos, err)
+		}
+		if files, _ := filepath.Glob(filepath.Join(dir, "*")); len(files) != 0 {
+			t.Fatalf("%s: hook left after off: %v", goos, files)
+		}
 	}
 }
