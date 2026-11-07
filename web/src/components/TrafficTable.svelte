@@ -45,10 +45,23 @@
   }
   let { rows, selected, pinned, autoScroll, onselect, onopen, oncontext, sort, onsort, empty }: Props = $props();
 
+  // Reads at a glance: reads blue, creates green, updates orange, deletes red.
+  const methodTone: Record<string, string> = {
+    GET: 'text-m-get',
+    HEAD: 'text-m-get',
+    POST: 'text-m-post',
+    PUT: 'text-m-put',
+    PATCH: 'text-m-put',
+    DELETE: 'text-err',
+    OPTIONS: 'text-faint',
+    CONNECT: 'text-faint',
+  };
+
   const cols: { key: SortKey; label: string; num?: boolean }[] = [
     { key: 'method', label: 'table.method' },
     { key: 'status', label: 'table.status' },
     { key: 'url', label: 'table.url' },
+    { key: 'at', label: 'table.clock', num: true },
     { key: 'duration', label: 'table.dur', num: true },
     { key: 'size', label: 'table.size', num: true },
   ];
@@ -60,14 +73,14 @@
   let widths = $state<Partial<Record<SortKey, number>>>(loadWidths());
   function loadWidths(): Partial<Record<SortKey, number>> {
     try {
-      return JSON.parse(localStorage.getItem('pp.cols.v5') ?? '{}');
+      return JSON.parse(localStorage.getItem('pp.cols.v6') ?? '{}');
     } catch {
       return {};
     }
   }
   function saveWidths() {
     try {
-      localStorage.setItem('pp.cols.v5', JSON.stringify(widths));
+      localStorage.setItem('pp.cols.v6', JSON.stringify(widths));
     } catch {
       /* private mode */
     }
@@ -245,12 +258,13 @@
               oncontext(r.id, e.clientX, e.clientY);
             }}
           >
-            <span class="font-mono text-xs font-medium">{r.method}</span>
+            <span class={cn('font-mono text-xs font-medium', methodTone[r.method] ?? 'text-foreground')}>{r.method}</span>
             <span class={cn('font-mono text-xs', p.label === t('status.pending') && p.cls === 'neutral' ? 'text-faint' : statusTone[p.cls])}>{p.label}</span>
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <span class="flex min-w-0 overflow-hidden font-mono text-[12.5px]" onpointerenter={(e) => tip.show(e, r.url)} onpointerleave={() => tip.hide()} onpointerdown={() => tip.hide()}
               >{#if r.gql_op}<span class="mr-1 shrink-0 rounded-[5px] bg-neutral-bg px-1.5 font-sans text-[10px] text-muted-foreground">{r.gql_type} {r.gql_op}</span>{/if}<span class="min-w-0 truncate">{text.slice(0, mid)}</span><span class="min-w-0 overflow-hidden whitespace-nowrap" dir="rtl"><span dir="ltr">{text.slice(mid)}</span></span></span
             >
+            <span class="text-right font-mono text-xs text-faint">{formatClock(r.created_at)}</span>
             <span class="text-right font-mono text-xs text-muted-foreground">{formatDuration(r.total_ms)}</span>
             <span class="text-right font-mono text-xs text-muted-foreground">{formatBytes(r.resp_size || r.bytes_down)}</span>
             <span class="text-[10px] font-semibold text-primary" title={r.matched_rules?.length ? t('table.ruleMark', { ids: r.matched_rules.join(', ') }) : undefined}
@@ -273,7 +287,7 @@
   }
   .row {
     display: grid;
-    grid-template-columns: var(--cols, 56px 52px minmax(120px, 1fr) 72px 68px 18px);
+    grid-template-columns: var(--cols, 56px 52px minmax(120px, 1fr) 72px 72px 68px 18px);
     column-gap: 14px; /* resize grips sit centred in this gap */
     align-items: center;
     padding: 0 16px;
@@ -287,9 +301,9 @@
   /* Narrow: drop Size. */
   @container (max-width: 520px) {
     .row {
-      grid-template-columns: var(--cols, 56px 52px minmax(100px, 1fr) 72px 0 14px);
+      grid-template-columns: var(--cols, 56px 52px minmax(100px, 1fr) 72px 72px 0 14px);
     }
-    .ttable:not([style*="--cols"]) .row > :nth-child(5) {
+    .ttable:not([style*="--cols"]) .row > :nth-child(6) {
       visibility: hidden;
     }
   }

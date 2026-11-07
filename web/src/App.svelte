@@ -460,6 +460,7 @@
     paused={status?.pending_breakpoints ?? 0}
     {sysProxy}
     ontogglesysproxy={toggleSysProxy}
+    ontogglenocaching={toggleNoCaching}
     onexport={exportFlows}
     onimport={importFile}
     visibleCount={visible.length}

@@ -19,6 +19,7 @@
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import { api, type ThrottleInfo } from '../lib/api';
   import { cn } from '$lib/utils.js';
+  import NetworkSettings from './NetworkSettings.svelte';
 
   interface Props {
     status: Status | null;
@@ -29,16 +30,19 @@
     paused?: number;
     sysProxy: boolean | null;
     ontogglesysproxy: () => void;
+    ontogglenocaching: () => void;
     onexport: (kind: 'har' | 'session', all: boolean, secrets: boolean) => void;
     onimport: (file: File) => void;
     visibleCount: number;
     onssllist: () => void;
     ontheme: () => void;
   }
-  let { status, ssl, theme, page, paused = 0, sysProxy, ontogglesysproxy, onexport, onimport, visibleCount, onssllist, ontheme }: Props =
+  let { status, ssl, theme, page, paused = 0, sysProxy, ontogglesysproxy, ontogglenocaching, onexport, onimport, visibleCount, onssllist, ontheme }: Props =
     $props();
 
   let secrets = $state(false);
+  const lanOn = $derived(!!status && !/^(127\.|\[?::1|localhost)/.test(status.proxy_addr));
+  const networkOn = $derived(!!status && (!!status.no_caching || !!status.throttle || lanOn));
   const pages: Page[] = ['traffic', 'rules', 'breakpoints', 'setup', 'settings'];
   let importInput = $state<HTMLInputElement>();
 
@@ -70,6 +74,21 @@
       <Switch checked={sysProxy} onCheckedChange={() => ontogglesysproxy()} aria-label={t('toolbar.systemProxy')} />
     </label>
   {/if}
+  <!-- Quick network switches; a dot shows when any is on. -->
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} variant="ghost" size="icon" class="relative text-muted-foreground" aria-label={t('settings.network')} title={t('settings.network')}>
+          <Settings2 class="size-4" />
+          {#if networkOn}<span class="absolute top-1.5 right-1.5 size-2 rounded-full bg-warn"></span>{/if}
+        </Button>
+      {/snippet}
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="end" class="w-[380px] px-4 pt-3 pb-1">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div onkeydown={(e) => e.stopPropagation()}><NetworkSettings {status} {ontogglenocaching} /></div>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
       {#snippet child({ props })}

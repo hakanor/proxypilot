@@ -44,6 +44,9 @@
   --ok: #3ddc84;
   --ok-bg: #18291e;
   --c4: #f59b23;
+  --m-get: #6ea8fe;
+  --m-post: #4ade80;
+  --m-put: #f59b23;
   --c4-bg: #2e2416;
   --err: #f15e6c;
   --err-bg: #2e1a1c;
@@ -81,6 +84,9 @@
   --ok: #166534;
   --ok-bg: #dcfce7;
   --c4: #c2410c;
+  --m-get: #1d4ed8;
+  --m-post: #15803d;
+  --m-put: #c2410c;
   --c4-bg: #ffedd5;
   --err: #b91c1c;
   --err-bg: #fdecec;
@@ -153,6 +159,9 @@
   --color-err: var(--err);
   --color-err-bg: var(--err-bg);
   --color-c4: var(--c4);
+  --color-m-get: var(--m-get);
+  --color-m-post: var(--m-post);
+  --color-m-put: var(--m-put);
   --color-c4-bg: var(--c4-bg);
   --color-neutral-fg: var(--neutral);
   --color-neutral-bg: var(--neutral-bg);
