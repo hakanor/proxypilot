@@ -451,19 +451,15 @@
 
 <svelte:window {onkeydown} />
 
-<div class="flex h-full">
-  <Sidebar rows={traffic.rows} pinnedCount={pinned.size} {view} onview={(v) => (view = v)} page={route.current.page} paused={status?.pending_breakpoints ?? 0} />
-  <div class="flex min-w-0 flex-1 flex-col">
+<div class="flex h-full flex-col">
   <Toolbar
     {status}
     {ssl}
     {theme}
-    onrecord={toggleRecording}
-    onclear={clearAll}
-    {clearing}
+    page={route.current.page}
+    paused={status?.pending_breakpoints ?? 0}
     {sysProxy}
     ontogglesysproxy={toggleSysProxy}
-    ontogglenocaching={toggleNoCaching}
     onexport={exportFlows}
     onimport={importFile}
     visibleCount={visible.length}
@@ -474,6 +470,11 @@
     }}
   />
   <Banner {conn} {notice} onretry={() => stream.retryNow()} ondismiss={() => (notice = null)} />
+  <div class="flex min-h-0 flex-1">
+  {#if route.current.page === 'traffic'}
+    <Sidebar rows={traffic.rows} pinnedCount={pinned.size} {view} onview={(v) => (view = v)} page={route.current.page} paused={status?.pending_breakpoints ?? 0} />
+  {/if}
+  <div class="flex min-w-0 flex-1 flex-col">
   {#if route.current.page === 'compose'}
     <ComposePage fromFlow={route.current.sub} onnotice={(m) => (notice = m)} />
   {:else if route.current.page === 'breakpoints'}
@@ -483,13 +484,13 @@
   {:else if route.current.page === 'setup'}
     <SetupPage onnotice={(m) => (notice = m)} version={deviceVersion} />
   {:else if route.current.page === 'settings'}
-    <SettingsPage />
+    <SettingsPage {status} ontogglenocaching={toggleNoCaching} />
   {:else if route.current.page === 'docs'}
     <DocsPage slug={route.current.sub} {status} />
   {:else if route.current.page === 'uninstall'}
     <UninstallPage onnotice={(m) => (notice = m)} />
   {:else}
-  <TypeStrip bind:typeFilter bind:query bind:errorsOnly bind:autoScroll bind:filterInput />
+  <TypeStrip recording={status?.recording ?? true} onrecord={toggleRecording} onclear={clearAll} {clearing} bind:typeFilter bind:query bind:errorsOnly bind:autoScroll bind:filterInput />
   <div class="relative flex min-h-0 flex-1 flex-col">
     <section class="flex min-w-0 flex-1 flex-col">
       <TrafficTable
@@ -582,6 +583,7 @@
   {#if menu}
     <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.id)} onclose={() => (menu = null)} />
   {/if}
+  {#if route.current.page === 'traffic'}
   <BottomBar
     totalDown={traffic.totalDown}
     totalUp={traffic.totalUp}
@@ -594,5 +596,7 @@
     proxyAddr={status?.proxy_addr}
     sslMode={ssl?.mode}
   />
+  {/if}
+  </div>
   </div>
 </div>

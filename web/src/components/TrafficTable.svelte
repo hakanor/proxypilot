@@ -46,12 +46,9 @@
   let { rows, selected, pinned, autoScroll, onselect, onopen, oncontext, sort, onsort, empty }: Props = $props();
 
   const cols: { key: SortKey; label: string; num?: boolean }[] = [
-    { key: 'n', label: 'table.index' },
-    { key: 'url', label: 'table.url' },
-    { key: 'client', label: 'table.client' },
     { key: 'method', label: 'table.method' },
     { key: 'status', label: 'table.status' },
-    { key: 'at', label: 'table.clock', num: true },
+    { key: 'url', label: 'table.url' },
     { key: 'duration', label: 'table.dur', num: true },
     { key: 'size', label: 'table.size', num: true },
   ];
@@ -63,14 +60,14 @@
   let widths = $state<Partial<Record<SortKey, number>>>(loadWidths());
   function loadWidths(): Partial<Record<SortKey, number>> {
     try {
-      return JSON.parse(localStorage.getItem('pp.cols.v4') ?? '{}');
+      return JSON.parse(localStorage.getItem('pp.cols.v5') ?? '{}');
     } catch {
       return {};
     }
   }
   function saveWidths() {
     try {
-      localStorage.setItem('pp.cols.v4', JSON.stringify(widths));
+      localStorage.setItem('pp.cols.v5', JSON.stringify(widths));
     } catch {
       /* private mode */
     }
@@ -248,27 +245,12 @@
               oncontext(r.id, e.clientX, e.clientY);
             }}
           >
-            <span class="text-faint">{r.n}</span>
+            <span class="font-mono text-xs font-medium">{r.method}</span>
+            <span class={cn('font-mono text-xs', p.label === t('status.pending') && p.cls === 'neutral' ? 'text-faint' : statusTone[p.cls])}>{p.label}</span>
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <span class="flex min-w-0 overflow-hidden font-mono text-[12.5px]" onpointerenter={(e) => tip.show(e, r.url)} onpointerleave={() => tip.hide()} onpointerdown={() => tip.hide()}
               >{#if r.gql_op}<span class="mr-1 shrink-0 rounded-[5px] bg-neutral-bg px-1.5 font-sans text-[10px] text-muted-foreground">{r.gql_type} {r.gql_op}</span>{/if}<span class="min-w-0 truncate">{text.slice(0, mid)}</span><span class="min-w-0 overflow-hidden whitespace-nowrap" dir="rtl"><span dir="ltr">{text.slice(mid)}</span></span></span
             >
-            <span class="flex min-w-0 items-center gap-1.5 text-muted-foreground" title={app}>
-              {#if hasIcon(r)}
-                <img
-                  src="/api/v1/app-icons/{encodeURIComponent(app)}"
-                  alt=""
-                  class="size-4 shrink-0 rounded-[4px]"
-                  onerror={() => (iconFail = new Set(iconFail).add(app))}
-                />
-              {:else}
-                <AppWindow class="size-4 shrink-0 text-faint" />
-              {/if}
-              <span class="truncate">{app}</span>
-            </span>
-            <span class="font-mono text-xs font-medium">{r.method}</span>
-            <span class={cn('font-mono text-xs', p.label === t('status.pending') && p.cls === 'neutral' ? 'text-faint' : statusTone[p.cls])}>{p.label}</span>
-            <span class="text-right font-mono text-xs text-faint">{formatClock(r.created_at)}</span>
             <span class="text-right font-mono text-xs text-muted-foreground">{formatDuration(r.total_ms)}</span>
             <span class="text-right font-mono text-xs text-muted-foreground">{formatBytes(r.resp_size || r.bytes_down)}</span>
             <span class="text-[10px] font-semibold text-primary" title={r.matched_rules?.length ? t('table.ruleMark', { ids: r.matched_rules.join(', ') }) : undefined}
@@ -291,7 +273,7 @@
   }
   .row {
     display: grid;
-    grid-template-columns: var(--cols, 40px minmax(120px, 1fr) 110px 60px 52px 72px 68px 64px 18px);
+    grid-template-columns: var(--cols, 56px 52px minmax(120px, 1fr) 72px 68px 18px);
     column-gap: 14px; /* resize grips sit centred in this gap */
     align-items: center;
     padding: 0 16px;
@@ -302,21 +284,12 @@
   .body {
     contain: strict;
   }
-  /* Narrow (detail panel open): drop Size, then Client. */
-  @container (max-width: 760px) {
+  /* Narrow: drop Size. */
+  @container (max-width: 520px) {
     .row {
-      grid-template-columns: var(--cols, 40px minmax(120px, 1fr) 110px 60px 52px 72px 68px 0 18px);
+      grid-template-columns: var(--cols, 56px 52px minmax(100px, 1fr) 72px 0 14px);
     }
-    .ttable:not([style*="--cols"]) .row > :nth-child(8) {
-      visibility: hidden;
-    }
-  }
-  @container (max-width: 600px) {
-    .row {
-      grid-template-columns: var(--cols, 40px minmax(100px, 1fr) 0 60px 52px 72px 68px 0 14px);
-    }
-    .ttable:not([style*="--cols"]) .row > :nth-child(3),
-    .ttable:not([style*="--cols"]) .row > :nth-child(8) {
+    .ttable:not([style*="--cols"]) .row > :nth-child(5) {
       visibility: hidden;
     }
   }

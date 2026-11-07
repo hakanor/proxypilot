@@ -3,6 +3,11 @@
   import { parseQuery, protoTypes, contentTypes, type TypeFilter } from '../lib/filter';
   import { Kbd } from '$lib/components/ui/kbd/index.js';
   import { cn } from '$lib/utils.js';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 
   interface Props {
     typeFilter: TypeFilter;
@@ -10,6 +15,11 @@
     errorsOnly: boolean;
     autoScroll: boolean;
     filterInput?: HTMLInputElement;
+    recording: boolean;
+    onrecord: () => void;
+    onclear: () => void;
+    /** The server is still deleting: the trash icon spins. */
+    clearing?: boolean;
   }
   let {
     typeFilter = $bindable(),
@@ -17,6 +27,10 @@
     errorsOnly = $bindable(),
     autoScroll = $bindable(),
     filterInput = $bindable(),
+    recording,
+    onrecord,
+    onclear,
+    clearing = false,
   }: Props = $props();
 
   let parsed = $derived(parseQuery(query));
@@ -43,26 +57,15 @@
   >
 {/snippet}
 
-<div class="flex h-[38px] min-w-0 shrink-0 items-center gap-0.5 border-b border-border px-gutter text-[13px]" role="toolbar" aria-label={t('toolbar.typeFilter')}>
-  <div class="flex min-w-0 items-center gap-0.5 overflow-x-auto">
-    {#each protoTypes as k (k)}{@render seg(k)}{/each}
-    <span class="mx-1.5 h-4 w-px shrink-0 bg-border"></span>
-    {#each contentTypes as k (k)}{@render seg(k)}{/each}
-  </div>
-  <span class="flex-1"></span>
-  {#each [{ on: errorsOnly, label: 'toolbar.errorsOnly', flip: () => (errorsOnly = !errorsOnly) }, { on: autoScroll, label: 'toolbar.autoScroll', flip: () => (autoScroll = !autoScroll) }] as p (p.label)}
-    <button
-      type="button"
-      aria-pressed={p.on}
-      onclick={p.flip}
-      class={cn(
-        'mr-1 whitespace-nowrap rounded-full border-0 px-2.5 py-1 text-xs',
-        p.on ? 'bg-accent text-accent-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground',
-      )}>{t(p.label)}</button
-    >
-  {/each}
+<div class="flex h-12 min-w-0 shrink-0 items-center gap-0.5 border-b border-border px-gutter text-[13px]" role="toolbar" aria-label={t('toolbar.typeFilter')}>
+  <Button variant="ghost" size="icon" class="text-muted-foreground" aria-label={recording ? t('toolbar.pauseRecording') : t('toolbar.resumeRecording')} title={recording ? t('toolbar.pauseRecording') : t('toolbar.resumeRecording')} onclick={onrecord}>
+    {#if recording}<Pause class="size-4" />{:else}<Play class="size-4 text-ok" />{/if}
+  </Button>
+  <Button variant="ghost" size="icon" class="text-muted-foreground" aria-label={t('toolbar.clear')} title={t('toolbar.clearHint')} onclick={onclear}>
+    {#if clearing}<LoaderCircle class="size-4 animate-spin" />{:else}<Trash2 class="size-4" />{/if}
+  </Button>
   <label
-    class="ml-1 flex h-7 w-[280px] min-w-[160px] shrink items-center gap-1.5 overflow-hidden rounded-[8px] border border-input bg-field px-2.5 text-faint focus-within:border-primary"
+    class="mx-2 flex h-8 min-w-[240px] flex-1 items-center gap-1.5 overflow-hidden rounded-[8px] border border-input bg-field px-2.5 text-faint focus-within:border-primary"
   >
     <svg class="shrink-0" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"
       ><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg
@@ -86,4 +89,20 @@
     />
     <Kbd>/</Kbd>
   </label>
+  <div class="flex min-w-0 items-center gap-0.5 overflow-x-auto">
+    {#each protoTypes as k (k)}{@render seg(k)}{/each}
+    <span class="mx-1.5 h-4 w-px shrink-0 bg-border"></span>
+    {#each contentTypes as k (k)}{@render seg(k)}{/each}
+  </div>
+  {#each [{ on: errorsOnly, label: 'toolbar.errorsOnly', flip: () => (errorsOnly = !errorsOnly) }, { on: autoScroll, label: 'toolbar.autoScroll', flip: () => (autoScroll = !autoScroll) }] as p (p.label)}
+    <button
+      type="button"
+      aria-pressed={p.on}
+      onclick={p.flip}
+      class={cn(
+        'mr-1 whitespace-nowrap rounded-full border-0 px-2.5 py-1 text-xs',
+        p.on ? 'bg-accent text-accent-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground',
+      )}>{t(p.label)}</button
+    >
+  {/each}
 </div>

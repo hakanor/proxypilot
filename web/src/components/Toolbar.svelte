@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '../lib/i18n';
   import type { SSLPolicy, Status } from '../lib/api';
-  import { href } from '../lib/route.svelte';
+  import { href, type Page } from '../lib/route.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Switch } from '$lib/components/ui/switch/index.js';
   import { Checkbox } from '$lib/components/ui/checkbox/index.js';
@@ -24,107 +24,39 @@
     status: Status | null;
     ssl: SSLPolicy | null;
     theme: 'dark' | 'light';
-    onrecord: () => void;
-    onclear: () => void;
-    /** The server is still deleting: the trash icon becomes a spinner. */
-    clearing?: boolean;
+    /** Current page and paused breakpoints, for the page tabs. */
+    page: Page;
+    paused?: number;
     sysProxy: boolean | null;
     ontogglesysproxy: () => void;
-    ontogglenocaching: () => void;
     onexport: (kind: 'har' | 'session', all: boolean, secrets: boolean) => void;
     onimport: (file: File) => void;
     visibleCount: number;
     onssllist: () => void;
     ontheme: () => void;
   }
-  let { status, ssl, theme, onrecord, onclear, clearing = false, sysProxy, ontogglesysproxy, ontogglenocaching, onexport, onimport, visibleCount, onssllist, ontheme }: Props =
+  let { status, ssl, theme, page, paused = 0, sysProxy, ontogglesysproxy, onexport, onimport, visibleCount, onssllist, ontheme }: Props =
     $props();
 
   let secrets = $state(false);
-  const recording = $derived(status?.recording ?? true);
-  const running = $derived(status?.running ?? false);
+  const pages: Page[] = ['traffic', 'rules', 'breakpoints', 'setup', 'settings'];
   let importInput = $state<HTMLInputElement>();
 
-  // Network throttle: presets from the server; hosts limit it to some hosts.
-  let throttle = $state<ThrottleInfo | null>(null);
-  let throttleHosts = $state('');
-  function loadThrottle() {
-    api.throttle().then((t) => {
-      throttle = t;
-      throttleHosts = (t.hosts ?? []).join(', ');
-    }, () => {});
-  }
-  async function setThrottle(name: string) {
-    const hosts = throttleHosts.split(',').map((h) => h.trim()).filter(Boolean);
-    throttle = await api.setThrottle(name === 'off' ? { enabled: false } : { enabled: true, name, hosts }).catch(() => throttle);
-    // the proxy.state event refreshes the status (badge)
-  }
-  function profileText(name: string): string {
-    const p = throttle?.profiles.find((x) => x.name === name);
-    if (!p) return '';
-    const bw = (k: number) => (k >= 1000 ? `${k / 1000} Mbit/s` : `${k} kbit/s`);
-    return t('toolbar.throttleSpec', { down: bw(p.down_kbps), up: bw(p.up_kbps), ms: p.latency_ms });
-  }
-
-  // "Allow devices on this network" (also on Setup → Physical device).
-  const port = $derived(status?.proxy_addr.split(':').pop() ?? '9090');
-  const lanOn = $derived(!!status && !/^(127\.|\[?::1|localhost)/.test(status.proxy_addr));
-  const networkOn = $derived(!!status && (!!status.no_caching || !!status.throttle || lanOn));
-  const networkTitle = $derived(
-    [t('toolbar.network'), status?.no_caching && t('toolbar.badgeNoCache'), lanOn && t('toolbar.badgeLan'), status?.throttle && t(`toolbar.throttleProfiles.${status.throttle}`)]
-      .filter(Boolean)
-      .join(' · '),
-  );
-
-  let lanFixed = $state(false);
-  let lanBusy = $state(false);
-  let lanError = $state('');
-  function loadLAN() {
-    api.deviceSetup().then((d) => (lanFixed = !!d.lan_fixed), () => {});
-  }
-  async function toggleLAN() {
-    lanBusy = true;
-    lanError = '';
-    try {
-      await api.setLAN(!lanOn); // the proxy.state event refreshes the status
-    } catch (e) {
-      lanError = e instanceof Error ? e.message : String(e);
-    } finally {
-      lanBusy = false;
-    }
-  }
 </script>
 
-{#snippet row(label: string, hint: string, on: boolean, disabled: boolean, toggle: () => void)}
-  <DropdownMenu.Item
-    {disabled}
-    closeOnSelect={false}
-    onSelect={toggle}
-    class="flex items-start gap-3 rounded-lg px-2.5 py-2"
-  >
-    <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-      <span class="font-medium text-foreground">{label}</span>
-      <span class="text-xs leading-snug whitespace-normal text-muted-foreground">{hint}</span>
-    </span>
-    <Switch class="pointer-events-none mt-0.5" checked={on} tabindex={-1} aria-hidden="true" />
-  </DropdownMenu.Item>
-{/snippet}
 
 <header class="flex h-[52px] min-w-0 shrink-0 items-center gap-1 border-b border-border px-gutter text-[13px]">
-  <Button
-    variant="ghost"
-    size="icon"
-    class="text-muted-foreground"
-    aria-label={recording ? t('toolbar.pauseRecording') : t('toolbar.resumeRecording')}
-    title={recording ? t('toolbar.pauseRecording') : t('toolbar.resumeRecording')}
-    onclick={onrecord}
-  >
-    {#if recording}<Pause class="size-4" />{:else}<Play class="size-4 text-ok" />{/if}
-  </Button>
-  <Button variant="ghost" size="icon" class="text-muted-foreground" aria-label={t('toolbar.clear')} title={t('toolbar.clearHint')} onclick={onclear}>
-    {#if clearing}<LoaderCircle class="size-4 animate-spin" />{:else}<Trash2 class="size-4" />{/if}
-  </Button>
-
+  <a href={href('traffic')} class="mr-4 flex items-center gap-2 font-semibold text-foreground no-underline"><img src="./icon.svg" alt="" class="size-5" />{t('app.name')}</a>
+  <nav class="flex min-w-0 items-center gap-0.5 overflow-x-auto" aria-label={t('sidebar.views')}>
+    {#each pages as p (p)}
+      <a
+        href={href(p)}
+        aria-current={page === p ? 'page' : undefined}
+        class={cn('flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 no-underline', page === p ? 'bg-sel text-foreground' : 'text-muted-foreground hover:text-foreground')}
+        >{t(`nav.${p}`)}{#if p === 'breakpoints' && paused}<span class="rounded-full bg-warn px-1.5 text-[11px] font-semibold text-background">{paused}</span>{/if}</a
+      >
+    {/each}
+  </nav>
   <span class="flex-1"></span>
 
   {#if ssl}
@@ -138,59 +70,6 @@
       <Switch checked={sysProxy} onCheckedChange={() => ontogglesysproxy()} aria-label={t('toolbar.systemProxy')} />
     </label>
   {/if}
-  <!-- Network switches: a dot shows when any of them is on. -->
-  <DropdownMenu.Root onOpenChange={(o) => o && (loadLAN(), loadThrottle())}>
-    <DropdownMenu.Trigger>
-      {#snippet child({ props })}
-        <Button {...props} variant="ghost" size="icon" class="relative text-muted-foreground" aria-label={t('toolbar.network')} title={networkTitle}>
-          <Settings2 class="size-4" />
-          {#if networkOn}<span class="absolute top-1.5 right-1.5 size-2 rounded-full bg-warn"></span>{/if}
-        </Button>
-      {/snippet}
-    </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end" class="w-[340px] p-1.5">
-      {#if status}
-        {@render row(t('toolbar.noCaching'), t('toolbar.noCachingHint'), !!status.no_caching, false, ontogglenocaching)}
-        {@render row(
-          t('setup.device.lan'),
-          lanFixed ? t('setup.device.lanFixed', { addr: status.proxy_addr }) : lanOn ? t('setup.device.lanOn', { port: port }) : t('setup.device.lanOff'),
-          lanOn,
-          lanFixed || lanBusy,
-          toggleLAN,
-        )}
-        {#if lanError}<p class="m-0 px-2.5 pb-1 text-xs text-err">{lanError}</p>{/if}
-        <DropdownMenu.Separator />
-        <div class="px-2.5 pt-1.5 pb-1">
-          <div class="font-medium text-foreground">{t('toolbar.throttle')}</div>
-          <div class="text-xs leading-snug text-muted-foreground">{t('toolbar.throttleHint')}</div>
-        </div>
-        <div class="flex flex-wrap gap-1 px-2.5 pb-2">
-          {#each ['off', ...(throttle?.profiles.map((p) => p.name) ?? [])] as name (name)}
-            {@const on = name === 'off' ? !status.throttle : status.throttle === name}
-            <button
-              type="button"
-              class={cn('h-7 rounded-md border px-2.5 text-xs', on ? 'border-primary bg-accent font-medium text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}
-              title={name === 'off' ? '' : profileText(name)}
-              onclick={() => setThrottle(name)}>{t(`toolbar.throttleProfiles.${name}`)}</button
-            >
-          {/each}
-        </div>
-        <div class="px-2.5 pb-2">
-          <input
-            class="h-8 w-full rounded-md border border-input bg-field px-2.5 font-mono text-xs text-foreground outline-none placeholder:text-faint focus:border-primary"
-            placeholder={t('toolbar.throttleHosts')}
-            bind:value={throttleHosts}
-            onkeydown={(e) => {
-              e.stopPropagation(); // keep typing inside the menu
-              if (e.key === 'Enter' && status?.throttle) setThrottle(status.throttle);
-            }}
-            onblur={() => status?.throttle && setThrottle(status.throttle)}
-          />
-          {#if status.throttle && throttle}<p class="m-0 mt-1 text-[11px] text-faint">{profileText(status.throttle)}</p>{/if}
-        </div>
-      {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
       {#snippet child({ props })}
@@ -214,6 +93,8 @@
           {#if !secrets}<span class="block px-2 pb-1 pt-0.5 text-[11px] text-faint">{t('toolbar.exportRedacted')}</span>{/if}
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
+      <DropdownMenu.Item onSelect={() => (location.hash = href('compose'))}>{t('nav.compose')}</DropdownMenu.Item>
+      <DropdownMenu.Separator />
       <DropdownMenu.Item onSelect={() => importInput?.click()}>{t('toolbar.import')}…</DropdownMenu.Item>
       <DropdownMenu.Separator />
       {#if notify.permission === 'granted'}

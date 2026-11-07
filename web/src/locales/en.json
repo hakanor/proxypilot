@@ -1125,6 +1125,7 @@
     "noMatch": "No message matches."
   },
   "settings": {
+    "network": "Network",
     "title": "Settings",
     "disk": "Disk limit",
     "diskHint": "Oldest recordings are removed beyond this size. Pinned requests stay. 0 means no limit.",

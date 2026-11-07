@@ -6,6 +6,10 @@
   import { Input } from '$lib/components/ui/input/index.js';
   import { Textarea } from '$lib/components/ui/textarea/index.js';
   import TerminateDialog from '../components/TerminateDialog.svelte';
+  import NetworkSettings from '../components/NetworkSettings.svelte';
+  import type { Status } from '../lib/api';
+
+  let { status, ontogglenocaching }: { status: Status | null; ontogglenocaching: () => void } = $props();
 
   let disk = $state(0);
   let hosts = $state('');
@@ -65,6 +69,8 @@
 <main class="min-w-0 flex-1 overflow-y-auto p-6 text-[13px]">
   <div class="mx-auto flex max-w-2xl flex-col gap-6">
     <h1 class="m-0 text-lg font-semibold">{t('settings.title')}</h1>
+
+    <NetworkSettings {status} {ontogglenocaching} />
 
     <section class="flex flex-col gap-2">
       <h2 class="m-0 text-sm font-semibold">{t('settings.disk')}</h2>

@@ -46,15 +46,6 @@
   }
   let { rows, pinnedCount, view, onview, page = 'traffic', paused = 0 }: Props = $props();
 
-  const nav: { page: Page; icon: typeof ArrowRightLeft }[] = [
-    { page: 'traffic', icon: ArrowRightLeft },
-    { page: 'compose', icon: SquarePen },
-    { page: 'rules', icon: SlidersHorizontal },
-    { page: 'breakpoints', icon: CirclePause },
-    { page: 'setup', icon: Wrench },
-    { page: 'settings', icon: Settings },
-    { page: 'docs', icon: BookOpen },
-  ];
   // Picking a device, app or domain from another page jumps back to Traffic.
   function go(v: View) {
     if (page !== 'traffic') location.hash = href('traffic');
@@ -267,15 +258,7 @@
 
 {#if collapsed}
   <nav class="flex w-[60px] shrink-0 flex-col items-center gap-1.5 border-r border-border bg-panel pt-3" aria-label={t('sidebar.views')}>
-    <img src="./icon.svg" alt="" class="mb-2 size-7 shrink-0" />
     <button type="button" class="flex size-9 items-center justify-center rounded-lg border-0 bg-transparent text-muted-foreground hover:bg-hover" title={t('sidebar.expand')} aria-label={t('sidebar.expand')} onclick={() => setCollapsed(false)}><PanelLeftOpen class="size-5" /></button>
-    <span class="my-1 w-[22px] border-t border-border"></span>
-    {#each nav as n (n.page)}
-      {@const Icon = n.icon}
-      <a href={href(n.page)} class={cn('relative flex size-9 items-center justify-center rounded-lg text-muted-foreground no-underline hover:bg-hover', page === n.page && 'bg-sel text-accent-foreground')} title={t(`nav.${n.page}`)} aria-label={t(`nav.${n.page}`)}
-        ><Icon class="size-[18px]" />{#if n.page === 'breakpoints' && paused}<span class="absolute top-1 right-1 size-2 rounded-full bg-warn"></span>{/if}</a
-      >
-    {/each}
     <span class="my-1 w-[22px] border-t border-border"></span>
     {#each tree.devices.slice(0, 6) as d (d.key)}
       <button type="button" class={cn('flex size-9 items-center justify-center rounded-lg border-0 bg-transparent text-muted-foreground hover:bg-hover', page === 'traffic' && view.kind === 'tree' && view.device === d.label && 'bg-sel text-accent-foreground')} title={`${d.label} · ${d.count}`} onclick={() => go(d.view)}
@@ -285,19 +268,11 @@
   </nav>
 {:else}
   <aside class="flex min-h-0 w-[250px] shrink-0 flex-col border-r border-border bg-panel text-[13px]">
-    <div class="flex h-[52px] shrink-0 items-center gap-2.5 pr-2 pl-4">
-      <img src="./icon.svg" alt="" class="size-6 shrink-0" /><strong class="flex-1 text-sm font-semibold">{t('app.name')}</strong>
+    <div class="flex h-10 shrink-0 items-center gap-2.5 pr-2 pl-4">
+      <span class="flex-1 text-xs font-medium text-muted-foreground">{t('sidebar.sources')}</span>
       <Button variant="ghost" size="icon" class="size-8 shrink-0 text-muted-foreground [&_svg:not([class*='size-'])]:size-[18px]" title={t('sidebar.collapse')} aria-label={t('sidebar.collapse')} onclick={() => setCollapsed(true)}><PanelLeftClose /></Button>
     </div>
-    <nav class="flex shrink-0 flex-col gap-px px-2.5" aria-label={t('sidebar.views')}>
-      {#each nav as n (n.page)}
-        {@const Icon = n.icon}
-        <a href={href(n.page)} class={cn('flex h-7 items-center gap-2 rounded-md px-2 text-foreground no-underline hover:bg-hover', page === n.page && 'bg-neutral-bg font-semibold')}
-          ><span class="flex w-[18px] items-center justify-center text-muted-foreground"><Icon class="size-4" /></span><span class="flex-1">{t(`nav.${n.page}`)}</span>{#if n.page === 'breakpoints' && paused}<span class="rounded-full bg-warn-bg px-1.5 text-[11px] font-semibold text-warn">{paused}</span>{/if}</a
-        >
-      {/each}
-    </nav>
-    <div class="mt-2 min-h-0 flex-1 overflow-y-auto border-t border-border px-2.5 pt-1 pb-2.5">
+    <div class="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2.5">
       {@render section(t('sidebar.favorites'))}
       {@render flat(t('sidebar.allTraffic'), ArrowRightLeft, { kind: 'all' }, total)}
       {@render flat(t('sidebar.pinned'), Star, { kind: 'pinned' }, pinnedCount)}
