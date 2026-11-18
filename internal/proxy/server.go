@@ -80,7 +80,7 @@ func New(opts Options) *Server {
 		opts.TempDir = os.TempDir()
 	}
 	if opts.Policy == nil {
-		opts.Policy = NewSSLPolicy(ModeAll, nil, nil)
+		opts.Policy = NewSSLPolicy([]string{"*"}, nil) // a bare Server (tests, library use) decrypts everything
 	}
 	s := &Server{opts: opts, hooks: opts.Hooks, log: opts.Logger}
 	s.transport = &http.Transport{

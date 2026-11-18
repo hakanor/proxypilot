@@ -42,7 +42,7 @@ func newEnv(t *testing.T) *env {
 	bus := events.NewBus()
 	s := New(Deps{
 		Store: st, Bus: bus, CA: root, Token: testToken,
-		Policy: proxy.NewSSLPolicy(proxy.ModeAll, nil, nil),
+		Policy: proxy.NewSSLPolicy(nil, nil),
 		Status: func() StatusInfo { return StatusInfo{Running: true} },
 	}, Options{Addr: "127.0.0.1:0"})
 	if err := s.Listen(); err != nil {
@@ -200,11 +200,12 @@ func TestSSLPolicyEndpoint(t *testing.T) {
 	}
 	var p proxy.PolicySnapshot
 	decode(t, e.do(t, "GET", "/api/v1/ssl-policy", nil, auth), &p)
-	if p.Mode != proxy.ModeAllowlist || len(p.Allowlist) != 1 {
+	if len(p.Allowlist) != 1 || len(p.Denylist) != 1 {
 		t.Fatalf("policy: %+v", p)
 	}
-	if got := e.do(t, "PUT", "/api/v1/ssl-policy", strings.NewReader(`{"mode":"sometimes"}`), auth).StatusCode; got != 400 {
-		t.Fatalf("bad mode: %d", got)
+	// Older clients still send a mode; it is ignored.
+	if got := e.do(t, "PUT", "/api/v1/ssl-policy", strings.NewReader(`{"mode":"all","allowlist":[]}`), auth).StatusCode; got != 200 {
+		t.Fatalf("old client with mode: %d", got)
 	}
 }
 
@@ -219,6 +220,7 @@ func TestSSLPolicyEmptyListsAreArrays(t *testing.T) {
 
 func TestForgetLearnedTunnel(t *testing.T) {
 	e := newEnv(t)
+	e.srv.deps.Policy.Set([]string{"pinned.example.com"}, nil)
 	e.srv.deps.Policy.LearnTunnel("pinned.example.com:443", "client rejected")
 	if e.srv.deps.Policy.ShouldIntercept("pinned.example.com:443") {
 		t.Fatal("learned host should be tunneled")

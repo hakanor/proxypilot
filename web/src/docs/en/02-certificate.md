@@ -21,11 +21,10 @@ proxypilot trust
 
 ## iOS Simulator
 
-Install the CA into every booted simulator, then send the Mac's traffic through the proxy:
+Install the CA into every booted simulator. Simulators follow the Mac's system proxy, which ProxyPilot sets while it runs:
 
 ```bash
 proxypilot setup ios-sim --all-booted
-proxypilot system-proxy on
 ```
 
 The **Setup** page does the same with buttons. Restart the app in the simulator afterwards.
@@ -66,13 +65,13 @@ The control API stays on this Mac; only the proxy is reachable from the network.
 
 ## Choose what to decrypt
 
-The **Decrypt** button next to the System proxy switch opens one dialog:
+It works like Proxyman's SSL Proxying list: nothing is decrypted until you allow it, and everything else is tunneled untouched, so websites and apps keep working.
 
-- **Block list** (default): decrypt everything except the hosts you list.
-- **Allow list**: decrypt only the hosts you list; everything else is tunneled untouched.
-- **Off**: decrypt nothing.
+- Right-click a request → **Enable SSL Proxying for host**, or select a tunneled request and press **Enable SSL Proxying** in the detail panel. New connections to that host are decrypted: repeat the request in the app.
+- The **Decrypt** button in the toolbar opens the list. Add hosts by hand, remove them, or turn on **also popular and pinned hosts** to decrypt the hosts you work with most without listing them.
+- **Never decrypt** wins over the list (SSL pinning, or one subdomain of a `*.` pattern).
 
-Patterns are wildcards (`*.example.com`, `api.*`); the block list always wins. In Allow list mode, **also popular and pinned hosts** decrypts the hosts you work with most without listing them.
+Patterns: `api.example.com`, `*.example.com` (subdomains only), optionally with `:port`. There is no limit on how many hosts you allow.
 
 ## SSL pinning and hosts that must not be decrypted
 
@@ -80,5 +79,5 @@ Apple services are tunneled untouched by default. When a client keeps rejecting 
 
 ```bash
 curl -X PUT -H "Authorization: Bearer $(cat '{dataDir}/token')" \
-  -d '{"mode":"all","denylist":["pinning.bank.com"]}' http://{api}/api/v1/ssl-policy
+  -d '{"allowlist":["api.example.com"],"denylist":["pinning.bank.com"]}' http://{api}/api/v1/ssl-policy
 ```

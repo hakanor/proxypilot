@@ -113,7 +113,9 @@ func (s *Server) handleSystemProxy(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, body)
 }
 
-// handlePutSystemProxy: {"enabled": true} points the Mac at the proxy, false restores the backup.
+// handlePutSystemProxy: {"enabled": true} points the system proxy at ProxyPilot again (the daemon
+// turns it on at start; this retries after a VPN or another app overwrote it). There is no off:
+// the system proxy stays on while ProxyPilot runs and is restored when it stops.
 func (s *Server) handlePutSystemProxy(w http.ResponseWriter, r *http.Request) {
 	if !s.devicesAvailable(w) {
 		return
@@ -121,17 +123,11 @@ func (s *Server) handlePutSystemProxy(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Enabled *bool `json:"enabled"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<10)).Decode(&req); err != nil || req.Enabled == nil {
-		writeError(w, http.StatusBadRequest, "bad_request", `expected {"enabled": true|false}`)
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<10)).Decode(&req); err != nil || req.Enabled == nil || !*req.Enabled {
+		writeError(w, http.StatusBadRequest, "bad_request", `expected {"enabled": true}: the system proxy stays on while ProxyPilot runs`)
 		return
 	}
-	m := s.deps.Devices.Proxy
-	var err error
-	if *req.Enabled {
-		_, err = m.On(r.Context(), s.proxyTarget(), s.opts.Addr)
-	} else {
-		err = m.Off(r.Context())
-	}
+	_, err := s.deps.Devices.Proxy.On(r.Context(), s.proxyTarget(), s.opts.Addr)
 	switch {
 	case errors.Is(err, macproxy.ErrNeedsAdmin):
 		body, _ := s.systemProxyBody(r)
@@ -139,9 +135,6 @@ func (s *Server) handlePutSystemProxy(w http.ResponseWriter, r *http.Request) {
 			"error":   map[string]string{"code": "needs_admin", "message": err.Error()},
 			"details": body,
 		})
-		return
-	case errors.Is(err, macproxy.ErrNoBackup):
-		writeError(w, http.StatusConflict, "not_managed", err.Error())
 		return
 	case err != nil:
 		deviceError(w, err)

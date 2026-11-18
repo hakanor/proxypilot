@@ -10,7 +10,7 @@ import (
 	"github.com/hakanor/proxypilot/internal/proxy"
 )
 
-// sslPolicyFile keeps SSL mode and lists changed in the UI or API across
+// sslPolicyFile keeps the SSL lists changed in the UI or API across
 // restarts; when present it wins over the ssl section of config.yaml.
 const sslPolicyFile = "ssl-policy.json"
 
@@ -31,13 +31,10 @@ func loadSSLPolicy(dir string) (p proxy.PolicySnapshot, ok bool) {
 	if err != nil || json.Unmarshal(b, &p) != nil {
 		return p, false
 	}
-	if _, err := proxy.ParseSSLMode(string(p.Mode)); err != nil {
-		return p, false
-	}
-	return p, true
+	return p, true // an old file's "mode" is ignored: only allowlisted hosts are decrypted
 }
 
-// refreshFavoriteHosts keeps the SSL allowlist mode's popular+pinned hosts current.
+// refreshFavoriteHosts keeps the popular+pinned hosts (include_favorites) current.
 func (d *Daemon) refreshFavoriteHosts(ctx context.Context, every time.Duration) {
 	for {
 		var hosts []string

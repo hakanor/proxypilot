@@ -27,8 +27,9 @@
     row: Row;
     onclose: () => void;
     onbypass: (host: string) => void;
+    onallow: (host: string) => void;
   }
-  let { row, onclose, onbypass }: Props = $props();
+  let { row, onclose, onbypass, onallow }: Props = $props();
 
   type ReqTab = 'header' | 'query' | 'cookies' | 'body' | 'raw';
   type RespTab = 'header' | 'body' | 'raw' | 'hex' | 'timing' | 'graphql' | 'messages';
@@ -108,6 +109,13 @@
     <Button variant="ghost" size="icon-sm" class="shrink-0 text-muted-foreground" aria-label={t('detail.close')} onclick={onclose}><XIcon /></Button>
   </div>
 
+  {#if row.state === 'tunneled'}
+    <!-- Not decrypted: only host, timing and size are known (Proxyman's "SSL Proxying not enabled"). -->
+    <div class="flex shrink-0 items-center gap-3 border-b border-border bg-neutral-bg px-4 py-2">
+      <span class="flex-1 leading-normal text-neutral-fg">{t('detail.notDecrypted', { host: row.host })}</span>
+      <Button size="sm" onclick={() => onallow(row.host)}>{t('detail.enableSSL')}</Button>
+    </div>
+  {/if}
   {#if gone}
     <p class="mx-4 my-3 text-faint">{t('detail.evicted')}</p>
   {:else}

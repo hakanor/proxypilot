@@ -34,6 +34,7 @@ func startDaemon(t *testing.T) *env {
 	cfg := config.Defaults()
 	cfg.DataDir = t.TempDir()
 	cfg.Proxy.Listen, cfg.API.Listen = "127.0.0.1:0", "127.0.0.1:0"
+	cfg.SystemProxy = false // never touch this machine's real proxy settings
 	ctx, cancel := context.WithCancel(context.Background())
 	ready := make(chan *daemon.Daemon, 1)
 	done := make(chan error, 1)

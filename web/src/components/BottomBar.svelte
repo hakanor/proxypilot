@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '../lib/i18n';
   import { formatBytes, formatCount, formatRate } from '../lib/format';
-  import type { Rule, SSLPolicy } from '../lib/api';
+  import type { Rule } from '../lib/api';
   import { href } from '../lib/route.svelte';
 
   interface Props {
@@ -14,9 +14,9 @@
     selected?: boolean;
     ruleCounts: Partial<Record<Rule['type'], number>>;
     proxyAddr?: string;
-    sslMode?: SSLPolicy['mode'];
+    decrypting?: number;
   }
-  let { totalDown, totalUp, rateDown, rateUp, shown, total, selected = false, ruleCounts, proxyAddr, sslMode }: Props = $props();
+  let { totalDown, totalUp, rateDown, rateUp, shown, total, selected = false, ruleCounts, proxyAddr, decrypting }: Props = $props();
   const ruleTypes: Rule['type'][] = ['map_local', 'breakpoint', 'rewrite', 'map_remote'];
 </script>
 
@@ -35,7 +35,7 @@
       >
     {/if}
   {/each}
-  {#if sslMode}
-    <span class="rounded-full bg-neutral-bg px-2 py-px text-[11px] text-neutral-fg">{t('traffic.sslChip', { mode: t(`toolbar.sslModes.${sslMode}`) })}</span>
+  {#if decrypting !== undefined}
+    <span class="rounded-full bg-neutral-bg px-2 py-px text-[11px] text-neutral-fg">{t('traffic.sslChip', { n: decrypting })}</span>
   {/if}
 </footer>

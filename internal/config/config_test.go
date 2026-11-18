@@ -97,9 +97,16 @@ func TestExplicitMissingConfigFails(t *testing.T) {
 	}
 }
 
-func TestInvalidSSLMode(t *testing.T) {
-	_, err := Load(Overrides{DataDir: ptr(t.TempDir())}, mapEnv(map[string]string{"PROXYPILOT_SSL_MODE": "sometimes"}))
-	if err == nil {
-		t.Fatal("expected validation error")
+func TestSystemProxyDefaultOnEnvOff(t *testing.T) {
+	cfg, err := Load(Overrides{DataDir: ptr(t.TempDir())}, mapEnv(nil))
+	if err != nil || !cfg.SystemProxy {
+		t.Fatalf("system proxy must default to on: %v %v", cfg.SystemProxy, err)
+	}
+	cfg, err = Load(Overrides{DataDir: ptr(t.TempDir())}, mapEnv(map[string]string{"PROXYPILOT_SYSTEM_PROXY": "0"}))
+	if err != nil || cfg.SystemProxy {
+		t.Fatalf("PROXYPILOT_SYSTEM_PROXY=0 must turn it off: %v %v", cfg.SystemProxy, err)
+	}
+	if _, err := Load(Overrides{DataDir: ptr(t.TempDir())}, mapEnv(map[string]string{"PROXYPILOT_SYSTEM_PROXY": "maybe"})); err == nil {
+		t.Fatal("expected an error for a non-boolean value")
 	}
 }

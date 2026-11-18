@@ -309,7 +309,7 @@ The certificate is installed before the proxy is changed, so a failed `--ca syst
 ### `system-proxy on|off|status`
 
 `status` / `on` / `off` print `{ "services": [ { "name": "Wi-Fi", "web": {"enabled","server","port"}, "secure": {...}, "bypass": [...] } ], "enabled": true, "managed": true, "backup_at": "…", "target": "127.0.0.1:9090" }`.
-`on` saves the previous settings to `<data-dir>/system-proxy-backup.json` once; `off` restores them exactly and deletes the backup (exit 4 if there is none).
+The daemon turns the system proxy on when it starts and restores it when it stops; `on` re-applies it by hand. `on` saves the previous settings to `<data-dir>/system-proxy-backup.json` once; `off` restores them exactly and deletes the backup (exit 4 if there is none), for when the daemon crashed.
 When macOS requires an administrator: exit 6 and `{ "error": "needs_admin", "commands": ["sudo networksetup …"] }`.
 `stop` restores the system proxy automatically (`"system_proxy_restored": true`); `--keep-system-proxy` skips it.
 

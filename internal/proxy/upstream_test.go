@@ -49,7 +49,7 @@ func TestUpstreamProxy(t *testing.T) {
 	up := httptest.NewServer(fake)
 	defer up.Close()
 
-	s, pu := startProxy(t, Options{Hooks: newRecHooks(), Policy: NewSSLPolicy(ModeOff, nil, nil)})
+	s, pu := startProxy(t, Options{Hooks: newRecHooks(), Policy: NewSSLPolicy(nil, nil)})
 	if err := s.SetUpstream("http://me:secret@"+up.Listener.Addr().String(), []string{"direct.example"}); err != nil {
 		t.Fatal(err)
 	}

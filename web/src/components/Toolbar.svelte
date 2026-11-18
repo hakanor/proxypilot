@@ -3,7 +3,6 @@
   import type { SSLPolicy, Status } from '../lib/api';
   import { href, type Page } from '../lib/route.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { Switch } from '$lib/components/ui/switch/index.js';
   import { Checkbox } from '$lib/components/ui/checkbox/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import Pause from '@lucide/svelte/icons/pause';
@@ -28,8 +27,6 @@
     /** Current page and paused breakpoints, for the page tabs. */
     page: Page;
     paused?: number;
-    sysProxy: boolean | null;
-    ontogglesysproxy: () => void;
     ontogglenocaching: () => void;
     onexport: (kind: 'har' | 'session', all: boolean, secrets: boolean) => void;
     onimport: (file: File) => void;
@@ -37,7 +34,7 @@
     onssllist: () => void;
     ontheme: () => void;
   }
-  let { status, ssl, theme, page, paused = 0, sysProxy, ontogglesysproxy, ontogglenocaching, onexport, onimport, visibleCount, onssllist, ontheme }: Props =
+  let { status, ssl, theme, page, paused = 0, ontogglenocaching, onexport, onimport, visibleCount, onssllist, ontheme }: Props =
     $props();
 
   let secrets = $state(false);
@@ -65,14 +62,8 @@
 
   {#if ssl}
     <Button variant="outline" size="sm" class="mr-1 gap-1.5 text-muted-foreground" title={t('ssl.title')} onclick={onssllist}
-      ><ShieldCheck class="size-3.5" />{t('toolbar.scope')}: <span class="font-medium text-foreground">{t(`ssl.modes.${ssl.mode}`)}</span></Button
+      ><ShieldCheck class="size-3.5" />{t('toolbar.scope')}: <span class="font-medium text-foreground">{t('toolbar.decryptHosts', { n: ssl.allowlist.length })}</span></Button
     >
-  {/if}
-  {#if sysProxy !== null}
-    <label class="mr-1 inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-muted-foreground">
-      {t('toolbar.systemProxy')}
-      <Switch checked={sysProxy} onCheckedChange={() => ontogglesysproxy()} aria-label={t('toolbar.systemProxy')} />
-    </label>
   {/if}
   <!-- Quick network switches; a dot shows when any is on. -->
   <DropdownMenu.Root>

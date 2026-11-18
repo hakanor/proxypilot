@@ -263,7 +263,7 @@ func TestHTTPSIntercept(t *testing.T) {
 func TestDenylistTunnels(t *testing.T) {
 	_, iss, upstream, upPool := mitmSetup(t)
 	hooks := newRecHooks()
-	policy := NewSSLPolicy(ModeAll, nil, []string{"127.0.0.1"})
+	policy := NewSSLPolicy([]string{"*"}, []string{"127.0.0.1"})
 	_, pu := startProxy(t, Options{Hooks: hooks, Issuer: iss, Policy: policy})
 
 	// The client trusts only the real upstream cert: works only if tunneled.

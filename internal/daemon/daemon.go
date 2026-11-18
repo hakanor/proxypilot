@@ -14,6 +14,7 @@ import (
 	"github.com/hakanor/proxypilot/internal/rules"
 
 	"github.com/hakanor/proxypilot/internal/devices"
+	"github.com/hakanor/proxypilot/internal/devices/macproxy"
 
 	"context"
 	"errors"
@@ -103,15 +104,11 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	if err != nil {
 		return err
 	}
-	mode, err := proxy.ParseSSLMode(cfg.SSL.Mode)
-	if err != nil {
-		return err
-	}
 	if saved, ok := loadSSLPolicy(cfg.DataDir); ok {
-		d.Policy = proxy.NewSSLPolicy(saved.Mode, saved.Allowlist, saved.Denylist)
+		d.Policy = proxy.NewSSLPolicy(saved.Allowlist, saved.Denylist)
 		d.Policy.SetFavorites(saved.Favorites)
 	} else {
-		d.Policy = proxy.NewSSLPolicy(mode, cfg.SSL.Allowlist, cfg.SSL.Denylist)
+		d.Policy = proxy.NewSSLPolicy(cfg.SSL.Allowlist, cfg.SSL.Denylist)
 	}
 
 	if d.Store, err = store.Open(cfg.DataDir, store.Options{MaxEntries: cfg.Store.MaxEntries, MaxBytes: int64(cfg.Store.MaxDiskMB) << 20, InlineBodyLimit: int64(cfg.Store.InlineBodyLimit)}); err != nil {
@@ -198,6 +195,24 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	d.restoreLAN()
 	d.Bus.Publish(events.ProxyState, map[string]any{"state": "running", "proxy_addr": d.proxyAddr()})
 	log.Info("proxypilot running", "proxy", st.ProxyAddr, "pid", st.PID, "data", cfg.DataDir, "ca", d.CA.Fingerprint())
+	// The system proxy is on for as long as the daemon runs; it is restored on the way out.
+	// networksetup takes seconds with many services, so it runs beside startup; its own timeout
+	// keeps a quick quit from killing it halfway, and the restore waits for it.
+	if cfg.SystemProxy {
+		applied := make(chan struct{})
+		go func() {
+			defer close(applied)
+			octx, ocancel := context.WithTimeout(context.Background(), time.Minute)
+			defer ocancel()
+			if _, err := devs.Proxy.On(octx, st.ProxyAddr, st.APIAddr); err != nil && !errors.Is(err, macproxy.ErrNotMac) {
+				log.Warn("could not turn on the system proxy", "err", err)
+			}
+		}()
+		defer func() {
+			<-applied
+			restoreSystemProxy(devs, log)
+		}()
+	}
 	if ready != nil {
 		ready(d)
 	}
@@ -225,6 +240,14 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 }
 
 var ErrAlreadyRunning = errors.New("proxypilot is already running")
+
+func restoreSystemProxy(devs *devices.Service, log *slog.Logger) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := devs.Proxy.Off(ctx); err != nil && !errors.Is(err, macproxy.ErrNoBackup) && !errors.Is(err, macproxy.ErrNotMac) {
+		log.Warn("could not restore the system proxy; run `proxypilot system-proxy off`", "err", err)
+	}
+}
 
 func newDevices(root *ca.RootCA, cfg config.Config) *devices.Service {
 	s := devices.New(root, cfg.DataDir)

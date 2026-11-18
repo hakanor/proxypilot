@@ -18,6 +18,7 @@ func testConfig(t *testing.T) config.Config {
 	cfg.DataDir = t.TempDir()
 	cfg.Proxy.Listen = "127.0.0.1:0"
 	cfg.API.Listen = "127.0.0.1:0"
+	cfg.SystemProxy = false // never touch this machine's real proxy settings
 	return cfg
 }
 

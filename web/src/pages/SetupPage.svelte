@@ -80,15 +80,15 @@
     }
   }
 
-  async function setProxy(on: boolean) {
+  // The system proxy is on while ProxyPilot runs; this only re-applies it (a VPN or app overwrote it).
+  async function reapplyProxy() {
     busy = 'proxy';
     adminCmds = null;
     try {
-      proxy = await api.setSystemProxy(on);
+      proxy = await api.setSystemProxy();
     } catch (e) {
       if (e instanceof APIError && e.code === 'needs_admin') {
-        const d = e.body?.details;
-        adminCmds = (on ? d?.on_commands : d?.off_commands)?.map((c: string) => 'sudo ' + c) ?? [];
+        adminCmds = e.body?.details?.on_commands?.map((c: string) => 'sudo ' + c) ?? [];
       } else proxyError = e instanceof Error ? e.message : String(e);
     } finally {
       busy = null;
@@ -214,20 +214,16 @@
                 {#if proxy.status.managed && proxy.status.backup_at}
                   <span class="text-faint">{t('setup.managed', { time: new Date(proxy.status.backup_at).toLocaleString() })}</span>
                 {/if}
-                <div class="flex gap-2">
-                  {#if proxy.status.enabled || proxy.status.managed}
-                    <Button variant="outline" disabled={busy !== null || !proxy.status.managed} onclick={() => setProxy(false)}>{t('setup.turnOff')}</Button>
-                  {/if}
-                  {#if !proxy.status.enabled}
-                    <Button disabled={busy !== null} onclick={() => setProxy(true)}>{t('setup.turnOn')}</Button>
-                  {/if}
-                </div>
+                {#if !proxy.status.enabled}
+                  <div class="flex items-center gap-2">
+                    <span class="flex-1 leading-normal text-warn">{t('setup.sysProxyOverwritten')}</span>
+                    <Button disabled={busy !== null} onclick={reapplyProxy}>{t('setup.reapply')}</Button>
+                  </div>
+                {/if}
                 {#if adminCmds}
                   <p class="leading-normal text-warn">{t('setup.needsAdmin')}</p>
                   <CodeBlock lang="bash" code={adminCmds.join('\n')} />
                 {/if}
-                <span class="text-faint">{t('setup.cmdTitle')}</span>
-                <CodeBlock lang="bash" code={proxy.status.enabled ? 'proxypilot system-proxy off' : 'proxypilot system-proxy on'} />
                 <span class="text-faint">{t('setup.restoreNote')}</span>
               {/if}
             </div>

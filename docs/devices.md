@@ -4,7 +4,8 @@ Every device sends its traffic to the proxy port (default `9090`) and trusts the
 
 ## This Mac (apps, Safari, Chrome)
 
-- Turn on the toolbar **System proxy** switch (or `proxypilot system-proxy on`). It backs up your current settings and points every network service at ProxyPilot; `off` or `proxypilot stop` restores them.
+- The system proxy is set automatically: while ProxyPilot runs, every network service points at it, and quitting restores your previous settings (there is no switch). If ProxyPilot ever crashes, `proxypilot system-proxy off` restores them.
+- Only hosts you allow are decrypted (right-click a request → **Enable SSL Proxying**, like Proxyman). Everything else is tunneled untouched, so websites keep working.
 - `proxypilot trust` adds the CA to the System keychain (password prompt). Safari, Chrome and most apps then accept it.
 - Apps are identified by process: the sidebar groups traffic under **This Mac → app**.
 
@@ -14,7 +15,6 @@ Simulators use the Mac's network settings, so they follow the system proxy.
 
 ```bash
 proxypilot setup ios-sim --all-booted   # install the CA into every booted simulator
-proxypilot system-proxy on
 ```
 
 Restart the app after installing so it picks up the new trust. The CA stays installed when the simulator shuts down. Simulator traffic shows up under **Simulators** in the sidebar.

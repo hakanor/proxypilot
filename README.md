@@ -32,7 +32,8 @@ Capture, inspect and change traffic from iOS simulators and devices, Android emu
 - **Compose and Repeat:** Paste a cURL command or start from a recorded flow. Requests can be repeated N times with a set concurrency.
 - **Setup helpers:**
   - Install the CA into iOS simulators and Android devices (adb).
-  - Toggle the macOS system proxy.
+  - Set the system proxy automatically while ProxyPilot runs, restored when it quits.
+  - Decrypt only the hosts you allow (right-click → Enable SSL Proxying, like Proxyman).
   - Capture Chrome over DevTools.
   - Phone certificate page with a QR code.
 - **Network:** Throttle profiles (EDGE, 3G, LTE, bad Wi-Fi, custom) per host, No caching, and opening the proxy to phones on your Wi-Fi from the toolbar.
@@ -66,7 +67,7 @@ To capture HTTPS on this Mac, trust the root certificate. This asks for your pas
 ./bin/proxypilot trust
 ```
 
-Then use **Setup** in the UI for simulators, devices and Chrome. `proxypilot system-proxy on` routes macOS apps through the proxy.
+Then use **Setup** in the UI for simulators, devices and Chrome. While ProxyPilot runs, macOS apps go through it automatically; only the hosts you allow are decrypted.
 
 ## CLI
 

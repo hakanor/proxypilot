@@ -14,7 +14,7 @@ ProxyPilot is a single binary: the proxy, the control API, this web UI and the C
 
 Then run `proxypilot ui`. From source: `make web && make build`, the binary is `bin/proxypilot`.
 
-The **System proxy** switch works on macOS, Windows (per-user Internet Settings, no admin) and Linux with GNOME. `proxypilot trust` trusts the CA on macOS and Windows; on Linux it prints the steps.
+While ProxyPilot runs it is the system proxy, on macOS, Windows (per-user Internet Settings, no admin) and Linux with GNOME; quitting restores your previous settings. Only the hosts you allow are decrypted, so websites keep working. `proxypilot trust` trusts the CA on macOS and Windows; on Linux it prints the steps.
 
 `proxypilot ui` starts the daemon in the background if needed and opens this page. Other ways to run it:
 

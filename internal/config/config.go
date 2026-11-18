@@ -24,6 +24,9 @@ type Config struct {
 	Redact RedactConfig `yaml:"redact"`
 	// Android tools (adb).
 	Android AndroidConfig `yaml:"android"`
+	// SystemProxy points the OS proxy settings at ProxyPilot while it runs and restores them
+	// on exit. Always on in the app; false only for tests and headless runs (PROXYPILOT_SYSTEM_PROXY=0).
+	SystemProxy bool `yaml:"system_proxy"`
 
 	// DataDir is not read from the file; it decides where the file lives.
 	DataDir string `yaml:"-"`
@@ -56,7 +59,7 @@ type StoreConfig struct {
 }
 
 type SSLConfig struct {
-	// Mode is all | allowlist | off.
+	// Mode is ignored (kept so older config files still load): only allowlisted hosts are decrypted.
 	Mode      string   `yaml:"mode"`
 	Allowlist []string `yaml:"allowlist"`
 	Denylist  []string `yaml:"denylist"`
@@ -80,8 +83,10 @@ func Defaults() Config {
 		Proxy: ProxyConfig{Listen: "127.0.0.1:9090"},
 		API:   APIConfig{Listen: "127.0.0.1:9091"},
 		Store: StoreConfig{MaxEntries: 10000, MaxDiskMB: 1024, InlineBodyLimit: 256 * 1024},
-		SSL:   SSLConfig{Mode: "all", Denylist: append([]string(nil), DefaultDenylist...)},
+		SSL:   SSLConfig{Denylist: append([]string(nil), DefaultDenylist...)},
 		Log:   LogConfig{Level: "info", Format: "text"},
+
+		SystemProxy: true,
 	}
 }
 
@@ -135,11 +140,6 @@ func Load(o Overrides, env Env) (Config, error) {
 }
 
 func (c Config) Validate() error {
-	switch c.SSL.Mode {
-	case "all", "allowlist", "off":
-	default:
-		return fmt.Errorf("ssl.mode must be all, allowlist or off (got %q)", c.SSL.Mode)
-	}
 	if c.Store.MaxEntries <= 0 {
 		return fmt.Errorf("store.max_entries must be > 0")
 	}
@@ -212,10 +212,16 @@ func applyEnv(cfg *Config, env Env) error {
 	str("PROXYPILOT_PROXY_LISTEN", &cfg.Proxy.Listen)
 	str("PROXYPILOT_API_LISTEN", &cfg.API.Listen)
 	str("PROXYPILOT_UPSTREAM_PROXY", &cfg.Proxy.Upstream)
-	str("PROXYPILOT_SSL_MODE", &cfg.SSL.Mode)
 	str("PROXYPILOT_LOG_LEVEL", &cfg.Log.Level)
 	str("PROXYPILOT_LOG_FORMAT", &cfg.Log.Format)
 	str("PROXYPILOT_ADB", &cfg.Android.ADB)
+	if v, ok := env("PROXYPILOT_SYSTEM_PROXY"); ok && v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("PROXYPILOT_SYSTEM_PROXY: %w", err)
+		}
+		cfg.SystemProxy = b
+	}
 	if err := num("PROXYPILOT_STORE_MAX_ENTRIES", &cfg.Store.MaxEntries); err != nil {
 		return err
 	}

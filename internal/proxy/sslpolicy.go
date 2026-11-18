@@ -1,69 +1,50 @@
 package proxy
 
 import (
-	"fmt"
 	"net"
 	"sort"
 	"strings"
 	"sync"
 )
 
-type SSLMode string
-
-const (
-	ModeAll       SSLMode = "all"       // intercept everything except the denylist
-	ModeAllowlist SSLMode = "allowlist" // intercept only the allowlist (minus the denylist)
-	ModeOff       SSLMode = "off"       // tunnel everything
-)
-
-// SSLPolicy decides per CONNECT host whether to intercept or tunnel.
-// The denylist always wins. Safe for concurrent use; API updates it at runtime.
+// SSLPolicy decides per CONNECT host whether to intercept or tunnel: only hosts on the
+// allowlist are decrypted (like Proxyman's SSL Proxying list), everything else is tunneled
+// untouched. The denylist always wins. Safe for concurrent use; API updates it at runtime.
 type SSLPolicy struct {
 	mu      sync.RWMutex
-	mode    SSLMode
 	allow   []string
 	deny    []string
 	learned map[string]string // host → reason (e.g. upstream requires client cert)
-	// favorites: in allowlist mode, also intercept the popular and pinned hosts (kept in auto by the daemon).
+	// favorites: also intercept the popular and pinned hosts (kept in auto by the daemon).
 	favorites bool
 	auto      map[string]bool
 }
 
-func NewSSLPolicy(mode SSLMode, allow, deny []string) *SSLPolicy {
+func NewSSLPolicy(allow, deny []string) *SSLPolicy {
 	p := &SSLPolicy{learned: map[string]string{}}
-	p.Set(mode, allow, deny)
+	p.Set(allow, deny)
 	return p
 }
 
-func ParseSSLMode(s string) (SSLMode, error) {
-	switch m := SSLMode(strings.ToLower(s)); m {
-	case ModeAll, ModeAllowlist, ModeOff:
-		return m, nil
-	}
-	return "", fmt.Errorf("invalid ssl mode %q (all|allowlist|off)", s)
-}
-
-// Set replaces mode and lists.
-func (p *SSLPolicy) Set(mode SSLMode, allow, deny []string) {
+// Set replaces both lists.
+func (p *SSLPolicy) Set(allow, deny []string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.mode = mode
 	p.allow = normalizePatterns(allow)
 	p.deny = normalizePatterns(deny)
 }
 
 // PolicySnapshot is the serializable state (API / status).
 type PolicySnapshot struct {
-	Mode      SSLMode           `json:"mode"`
 	Allowlist []string          `json:"allowlist"`
 	Denylist  []string          `json:"denylist"`
 	Learned   map[string]string `json:"learned_tunnels"`
 	Favorites bool              `json:"include_favorites"`
-	// FavoriteHosts: the popular and pinned hosts the allowlist mode adds right now.
+	// FavoriteHosts: the popular and pinned hosts include_favorites adds right now.
 	FavoriteHosts []string `json:"favorite_hosts,omitempty"`
 }
 
-// SetFavorites turns the popular+pinned hosts on or off for the allowlist mode.
+// SetFavorites turns decrypting the popular+pinned hosts on or off.
 func (p *SSLPolicy) SetFavorites(on bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -93,7 +74,7 @@ func (p *SSLPolicy) Snapshot() PolicySnapshot {
 		fav = append(fav, h)
 	}
 	sort.Strings(fav)
-	return PolicySnapshot{Mode: p.mode, Allowlist: append([]string{}, p.allow...), Denylist: append([]string{}, p.deny...), Learned: l, Favorites: p.favorites, FavoriteHosts: fav}
+	return PolicySnapshot{Allowlist: append([]string{}, p.allow...), Denylist: append([]string{}, p.deny...), Learned: l, Favorites: p.favorites, FavoriteHosts: fav}
 }
 
 // ShouldIntercept takes "host:port" (or a bare host).
@@ -107,14 +88,7 @@ func (p *SSLPolicy) ShouldIntercept(hostport string) bool {
 	if _, ok := p.learned[host]; ok {
 		return false
 	}
-	switch p.mode {
-	case ModeOff:
-		return false
-	case ModeAllowlist:
-		return matchAny(p.allow, host, port) || p.favorites && p.auto[host]
-	default:
-		return true
-	}
+	return matchAny(p.allow, host, port) || p.favorites && p.auto[host]
 }
 
 // LearnTunnel makes future CONNECTs to host bypass interception

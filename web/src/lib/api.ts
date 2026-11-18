@@ -115,12 +115,11 @@ export interface Status {
 }
 
 export interface SSLPolicy {
-  mode: 'all' | 'allowlist' | 'off';
   allowlist: string[];
   denylist: string[];
   /** Hosts tunneled for this run: host → reason (pinning, mTLS). */
   learned_tunnels?: Record<string, string>;
-  /** Allowlist mode: also decrypt the popular and pinned hosts (listed in favorite_hosts). */
+  /** Also decrypt the popular and pinned hosts (listed in favorite_hosts). */
   include_favorites?: boolean;
   favorite_hosts?: string[];
 }
@@ -482,7 +481,8 @@ export const api = {
   installCA: (udid?: string) =>
     call<{ results: InstallResult[] }>('POST', udid ? `/devices/simulators/${encodeURIComponent(udid)}/install-ca` : '/devices/simulators/install-ca'),
   systemProxy: () => call<SystemProxy>('GET', '/system-proxy'),
-  setSystemProxy: (enabled: boolean) => call<SystemProxy>('PUT', '/system-proxy', { enabled }),
+  /** Points the system proxy at ProxyPilot again; there is no off while ProxyPilot runs. */
+  setSystemProxy: () => call<SystemProxy>('PUT', '/system-proxy', { enabled: true }),
   uninstallPlan: () => call<{ steps: UninstallStep[] }>('GET', '/uninstall'),
   uninstall: () => call<{ results: { id: string; ok: boolean; done?: string[]; error?: string }[]; steps: UninstallStep[] }>('POST', '/uninstall'),
   ca: () => call<CAInfo>('GET', '/ca'),
@@ -529,7 +529,7 @@ export const api = {
   setPin: (id: string, on: boolean) => call<void>(on ? 'PUT' : 'DELETE', `/flows/${id}/pin`),
   sslPolicy: () => call<SSLPolicy>('GET', '/ssl-policy'),
   setSSLPolicy: (p: SSLPolicy) =>
-    call<SSLPolicy>('PUT', '/ssl-policy', { mode: p.mode, allowlist: p.allowlist, denylist: p.denylist, include_favorites: !!p.include_favorites }),
+    call<SSLPolicy>('PUT', '/ssl-policy', { allowlist: p.allowlist, denylist: p.denylist, include_favorites: !!p.include_favorites }),
   diff: (a: string, b: string) => call<FlowDiff>('GET', `/diff?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
   forgetTunnel: (host: string) => call<SSLPolicy>('DELETE', `/ssl-policy/learned/${encodeURIComponent(host)}`),
 };

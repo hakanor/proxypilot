@@ -147,15 +147,9 @@ func (s *Server) registerRead() {
 			"active_rules": st.ActiveRules, "paused_breakpoints": st.PendingBreakpoints, "version": st.Version,
 			"you": s.owner, "read_only": s.opts.ReadOnly,
 		}
-		// Tunneled hosts show no headers or bodies; say which ones are decrypted.
+		// Only allowlisted hosts are decrypted; the rest are tunneled and show no headers or bodies.
 		if p, err := k.c.SSLPolicy(ctx); err == nil {
-			d := map[string]any{"mode": p.Mode}
-			if p.Mode == "allowlist" {
-				d["allowlist"], d["also_popular_and_pinned"] = p.Allowlist, p.Favorites
-			} else if p.Mode == "all" {
-				d["never_decrypted"] = p.Denylist
-			}
-			out["decrypt"] = d
+			out["decrypt"] = map[string]any{"allowlist": p.Allowlist, "also_popular_and_pinned": p.Favorites, "never_decrypted": p.Denylist}
 		}
 		return out, nil
 	})

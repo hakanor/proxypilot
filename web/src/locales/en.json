@@ -22,24 +22,16 @@
   },
   "ssl": {
     "title": "What to decrypt",
-    "body": "Decrypted hosts show full requests. Tunneled hosts show only the host, timing and size, and the app keeps working.",
-    "modes": {
-      "allowlist": "Allow list",
-      "all": "Block list",
-      "off": "Off"
-    },
-    "modeHint": {
-      "allowlist": "Only the hosts below are decrypted. Everything else is tunneled.",
-      "all": "Everything is decrypted except the hosts below.",
-      "off": "Nothing is decrypted. Hosts below stay tunneled when you switch back."
-    },
+    "body": "Like Proxyman's SSL Proxying list: only the hosts below are decrypted. Everything else is tunneled untouched, so websites and apps keep working. Right-click a request → Enable SSL Proxying to add its host.",
     "allowlist": {
-      "title": "Decrypt only these",
-      "hint": "*.example.com matches its subdomains (not example.com itself)."
+      "title": "Decrypt these hosts",
+      "hint": "*.example.com matches its subdomains (not example.com itself).",
+      "empty": "None yet: right-click a request → Enable SSL Proxying"
     },
     "denylist": {
       "title": "Never decrypt",
-      "hint": "Always tunneled, in every mode. Use it for apps with SSL pinning. *.example.com matches subdomains."
+      "hint": "Wins over the list above. Use it for apps with SSL pinning, or to skip one subdomain of a *. pattern.",
+      "empty": "None"
     },
     "favorites": {
       "title": "Also decrypt popular and pinned hosts",
@@ -54,7 +46,8 @@
     },
     "add": "Add",
     "remove": "Remove {pattern}",
-    "empty": "None"
+    "enabledFor": "SSL Proxying enabled for {host}. New connections are decrypted: repeat the request in the app.",
+    "disabledFor": "SSL Proxying disabled for {host}"
   },
   "toolbar": {
     "record": "Record",
@@ -66,11 +59,6 @@
     "autoScroll": "Auto-scroll",
     "rules": "Rules",
     "breakpoints": "Breakpoints",
-    "sslModes": {
-      "all": "Block list",
-      "allowlist": "Allow list",
-      "off": "Off"
-    },
     "scope": "Decrypt",
     "toggleTheme": "Toggle theme",
     "proxyUp": "Proxy listening on {addr}",
@@ -85,10 +73,6 @@
     "includeSecrets": "Include secrets",
     "importing": "Importing… {pct}%",
     "imported": "Imported {n} flows into a new session",
-    "systemProxy": "System proxy",
-    "systemProxyOn": "System proxy on",
-    "systemProxyOff": "System proxy off",
-    "systemProxyAdmin": "macOS needs administrator rights. Run in Terminal: {cmd}",
     "pausedResume": "Paused · Resume",
     "resumeHint": "Recording was paused. Click to record again.",
     "pauseRecording": "Pause recording",
@@ -128,7 +112,8 @@
       "custom": "Custom"
     },
     "throttleHosts": "Only these hosts: api.example.com, *.cdn.net",
-    "throttleSpec": "↓ {down} · ↑ {up} · +{ms} ms latency"
+    "throttleSpec": "↓ {down} · ↑ {up} · +{ms} ms latency",
+    "decryptHosts": "{n} hosts"
   },
   "sidebar": {
     "views": "VIEWS",
@@ -207,7 +192,9 @@
     "rewritten": "Rewritten by a rule ({phase})",
     "repeated": "Sent again: {status}",
     "breakpointAdded": "Breakpoint added: {name}. The next matching request pauses on the Breakpoints page.",
-    "protocol": "Protocol between the app and ProxyPilot"
+    "protocol": "Protocol between the app and ProxyPilot",
+    "notDecrypted": "SSL Proxying is not enabled for {host}: only the host, timing and size are shown.",
+    "enableSSL": "Enable SSL Proxying"
   },
   "traffic": {
     "rateHint": "Live throughput through the proxy (download / upload)",
@@ -226,7 +213,7 @@
       "rewrite": "Rewrite {n}",
       "map_remote": "Map Remote {n}"
     },
-    "sslChip": "SSL: {mode}",
+    "sslChip": "Decrypting {n} hosts",
     "resize": "Drag to resize"
   },
   "banner": {
@@ -494,12 +481,9 @@
     "on": "On",
     "off": "Off",
     "managed": "Managed by ProxyPilot since {time}",
-    "sysProxyBody": "Points HTTP and HTTPS of every network service at {target}. Bypass: localhost, 127.0.0.1, *.local.",
-    "turnOn": "Turn on",
-    "turnOff": "Turn off and restore",
+    "sysProxyBody": "ProxyPilot points HTTP and HTTPS of every network service at {target} while it runs, and restores the previous settings when it stops. Bypass: localhost, 127.0.0.1, *.local.",
     "copyCmd": "Copy command",
-    "cmdTitle": "Same in the terminal",
-    "restoreNote": "Turning it off restores the exact previous settings from a backup. `proxypilot stop` does it too.",
+    "restoreNote": "Quitting ProxyPilot restores the exact previous settings. If it ever crashes, `proxypilot system-proxy off` restores them.",
     "needsAdmin": "macOS asked for administrator rights. Run these commands in Terminal:",
     "noProxy": "no proxy",
     "caTitle": "Root certificate",
@@ -800,7 +784,9 @@
       "agents": "AI AGENTS",
       "mobile": "MOBILE",
       "desktop": "THIS MAC"
-    }
+    },
+    "sysProxyOverwritten": "Another app (a VPN, for example) changed the system proxy.",
+    "reapply": "Point it at ProxyPilot again"
   },
   "uninstall": {
     "title": "Remove ProxyPilot from this Mac",
@@ -1088,13 +1074,14 @@
     "pin": "Pin",
     "unpin": "Unpin",
     "filterHost": "Show only {host}",
-    "bypass": "Bypass SSL for {host}",
     "done": "{action}: {name}",
     "copied": "Copied",
     "blocked": "Blocked {url}",
     "recordOnlyHost": "Record only {host}",
     "recordOnlyApp": "Record only {app}",
-    "recordOnlyDone": "Recording filter updated. Clear it in Settings."
+    "recordOnlyDone": "Recording filter updated. Clear it in Settings.",
+    "enableSSL": "Enable SSL Proxying for {host}",
+    "disableSSL": "Disable SSL Proxying for {host}"
   },
   "typeStrip": {
     "all": "All",

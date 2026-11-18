@@ -15,7 +15,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/hakanor/proxypilot/internal/devices/execx"
-	"github.com/hakanor/proxypilot/internal/proxy"
 	"github.com/hakanor/proxypilot/internal/store"
 )
 
@@ -383,6 +382,7 @@ func (s *Server) handleGetPolicy(w http.ResponseWriter, _ *http.Request) {
 }
 
 type policyUpdate struct {
+	// Mode is accepted from older clients and ignored: only allowlisted hosts are decrypted.
 	Mode      string   `json:"mode"`
 	Allowlist []string `json:"allowlist"`
 	Denylist  []string `json:"denylist"`
@@ -398,12 +398,7 @@ func (s *Server) handlePutPolicy(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "invalid JSON: "+err.Error())
 		return
 	}
-	mode, err := proxy.ParseSSLMode(u.Mode)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
-		return
-	}
-	s.deps.Policy.Set(mode, u.Allowlist, u.Denylist)
+	s.deps.Policy.Set(u.Allowlist, u.Denylist)
 	if u.IncludeFavorites != nil {
 		s.deps.Policy.SetFavorites(*u.IncludeFavorites)
 	}

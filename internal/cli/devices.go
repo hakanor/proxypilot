@@ -215,7 +215,7 @@ func newSetupCmd(app *App) *cobra.Command {
 					}
 				}
 				if !proxyOn {
-					app.Printf("\nSimulators use the Mac's network settings. Turn on the system proxy:\n  proxypilot system-proxy on\n")
+					app.Printf("\nSimulators use the Mac's network settings; ProxyPilot sets the system proxy while it runs. If it is off, start ProxyPilot or run:\n  proxypilot system-proxy on\n")
 				}
 			}
 			if failed > 0 || len(res) == 0 {

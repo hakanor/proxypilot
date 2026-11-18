@@ -138,7 +138,6 @@
 
   let sort = $state<{ key: SortKey; dir: 1 | -1 } | null>(null);
   let menu = $state<{ id: string; x: number; y: number } | null>(null);
-  let sysProxy = $state<boolean | null>(null);
 
   let visible = $derived.by(() => {
     const { chips, text } = parseQuery(query);
@@ -150,29 +149,6 @@
   });
   const selectedRow = $derived(selected ? traffic.get(selected) : undefined);
   const filtering = $derived(query.trim() !== '' || errorsOnly || view.kind !== 'all' || typeFilter !== 'all');
-
-  async function refreshSysProxy() {
-    try {
-      sysProxy = (await api.systemProxy()).status.enabled;
-    } catch {
-      sysProxy = null; // not macOS
-    }
-  }
-
-  async function toggleSysProxy() {
-    try {
-      sysProxy = (await api.setSystemProxy(!sysProxy)).status.enabled;
-      // Turning the proxy on means "capture": make sure recording is running.
-      if (sysProxy && status && !status.recording) {
-        const r = await api.setRecording(true);
-        status = { ...status, recording: r.recording };
-      }
-    } catch (e) {
-      const d = (e as { body?: { details?: { on_commands?: string[]; off_commands?: string[] } } }).body?.details;
-      const cmds = (sysProxy ? d?.off_commands : d?.on_commands) ?? [];
-      notice = cmds.length ? t('toolbar.systemProxyAdmin', { cmd: 'sudo ' + cmds[0] + (cmds.length > 1 ? ' …' : '') }) : String(e);
-    }
-  }
 
   // Toolbar "No caching": flips at once, the server confirms.
   async function toggleNoCaching() {
@@ -242,7 +218,6 @@
 
   onMount(() => {
     stream.start();
-    refreshSysProxy();
     // A request paused before the page loaded still gets the pop-up.
     api
       .breakpoints()
@@ -254,7 +229,6 @@
       .catch(() => {});
     const id = setInterval(() => {
       refreshStatus();
-      refreshSysProxy();
     }, 5000);
     return () => {
       clearInterval(id);
@@ -303,6 +277,14 @@
     } catch (e) {
       notice = e instanceof Error ? e.message : String(e);
     }
+  }
+
+  // Right-click / detail "Enable SSL Proxying" (Proxyman-style): decrypt this host from the next connection on.
+  async function setDecrypt(host: string, on: boolean) {
+    const p = ssl ?? (await api.sslPolicy());
+    if (p.allowlist.includes(host) === on) return;
+    ssl = await api.setSSLPolicy({ ...p, allowlist: on ? [...p.allowlist, host] : p.allowlist.filter((h) => h !== host) });
+    notice = t(on ? 'ssl.enabledFor' : 'ssl.disabledFor', { host });
   }
 
   async function addBypass(host: string) {
@@ -372,7 +354,9 @@
       { label: t('menu.recordOnlyHost', { host: r.host }), action: () => act(async () => recordOnly({ hosts: [r.host] })) },
       { label: t('menu.recordOnlyApp', { app: appOf(r) }), action: () => act(async () => recordOnly({ apps: [appOf(r)] })) },
       { label: t('menu.filterHost', { host: r.host }), action: () => (query = `host:${r.host}`) },
-      { label: t('menu.bypass', { host: r.host }), action: () => act(async () => addBypass(r.host)) },
+      ssl?.allowlist.includes(r.host)
+        ? { label: t('menu.disableSSL', { host: r.host }), action: () => act(async () => setDecrypt(r.host, false)) }
+        : { label: t('menu.enableSSL', { host: r.host }), action: () => act(async () => setDecrypt(r.host, true)) },
     ];
   }
 
@@ -458,8 +442,6 @@
     {theme}
     page={route.current.page}
     paused={status?.pending_breakpoints ?? 0}
-    {sysProxy}
-    ontogglesysproxy={toggleSysProxy}
     ontogglenocaching={toggleNoCaching}
     onexport={exportFlows}
     onimport={importFile}
@@ -546,6 +528,7 @@
         row={selectedRow}
         onclose={() => (detailOpen = false)}
         onbypass={addBypass}
+        onallow={(host) => act(async () => setDecrypt(host, true))}
       />
       </div>
     {/if}
@@ -595,7 +578,7 @@
     selected={!!selectedRow}
     {ruleCounts}
     proxyAddr={status?.proxy_addr}
-    sslMode={ssl?.mode}
+    decrypting={ssl?.allowlist.length}
   />
   {/if}
   </div>

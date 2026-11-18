@@ -40,8 +40,8 @@ Open **Setup** in the UI, or use the CLI:
 
 | Source | How |
 |---|---|
-| Apps on this Mac, Safari, Chrome | Toolbar **System proxy** switch, or `proxypilot system-proxy on` |
-| iOS Simulator | `proxypilot setup ios-sim --all-booted` (installs the CA), then the system proxy switch |
+| Apps on this Mac, Safari, Chrome | Automatic: ProxyPilot sets the system proxy while it runs |
+| iOS Simulator | `proxypilot setup ios-sim --all-booted` (installs the CA); it follows the system proxy |
 | iPhone / Android on the same Wi-Fi | Setup → Physical device: turn on **Allow devices on this network**, scan the QR code, follow the animated steps |
 | Android emulator / USB device | `proxypilot setup android` |
 | Chrome only, without touching the system | `proxypilot chrome launch` |

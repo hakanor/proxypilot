@@ -20,7 +20,7 @@ curl -H "Authorization: Bearer $TOKEN" "http://{api}/api/v1/flows?status=5xx&lim
 | GET | `/api/v1/summary` | Totals and failures (`since=5m`) |
 | GET | `/api/v1/stream` | WebSocket event stream |
 | GET | `/api/v1/stream/ndjson` | Same as NDJSON (for curl) |
-| GET/PUT | `/api/v1/ssl-policy` | Interception mode and lists |
+| GET/PUT | `/api/v1/ssl-policy` | Hosts to decrypt (allowlist) and never decrypt (denylist) |
 | GET/POST | `/api/v1/rules` | List / create rules (`ttl` sets an expiry) |
 | GET/PUT/DELETE | `/api/v1/rules/{id}` | One rule |
 | POST | `/api/v1/rules/{id}/toggle` | Enable or disable |
@@ -50,7 +50,7 @@ curl -H "Authorization: Bearer $TOKEN" "http://{api}/api/v1/flows?status=5xx&lim
 | POST | `/api/v1/devices/android/setup` | `{"serial","mode","ca"}` |
 | POST | `/api/v1/devices/android/remove` | `{"serial"}` |
 | GET | `/api/v1/devices/simulators` | iOS simulators and CA state |
-| GET/PUT | `/api/v1/system-proxy` | macOS system proxy |
+| GET/PUT | `/api/v1/system-proxy` | System proxy state; PUT `{"enabled":true}` re-applies it (there is no off while running) |
 | GET/POST | `/api/v1/uninstall` | Cleanup plan / run automatic cleanup |
 
 Errors look like `{"error": {"code": "not_found", "message": "…"}}`. The full schema is in `docs/openapi.yaml`.
