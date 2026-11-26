@@ -58,6 +58,7 @@
   });
   const reveal = true; // the UI is local, so it always shows real values
   let flow = $state<FlowDetail | null>(null);
+  const tunnelWhy = $derived(flow?.tags?.tunnel_reason ?? 'not_allowlisted');
   let gone = $state(false);
   let toast = $state<string | null>(null);
   let toastTimer: ReturnType<typeof setTimeout>;
@@ -112,8 +113,8 @@
   {#if row.state === 'tunneled'}
     <!-- Not decrypted: only host, timing and size are known (Proxyman's "SSL Proxying not enabled"). -->
     <div class="flex shrink-0 items-center gap-3 border-b border-border bg-neutral-bg px-4 py-2">
-      <span class="flex-1 leading-normal text-neutral-fg">{t('detail.notDecrypted', { host: row.host })}</span>
-      <Button size="sm" onclick={() => onallow(row.host)}>{t('detail.enableSSL')}</Button>
+      <span class="flex-1 leading-normal text-neutral-fg">{t(`detail.tunnelReason.${tunnelWhy}`, { host: row.host })}</span>
+      {#if tunnelWhy === 'not_allowlisted'}<Button size="sm" onclick={() => onallow(row.host)}>{t('detail.enableSSL')}</Button>{/if}
     </div>
   {/if}
   {#if gone}

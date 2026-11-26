@@ -193,8 +193,13 @@
     "repeated": "Sent again: {status}",
     "breakpointAdded": "Breakpoint added: {name}. The next matching request pauses on the Breakpoints page.",
     "protocol": "Protocol between the app and ProxyPilot",
-    "notDecrypted": "SSL Proxying is not enabled for {host}: only the host, timing and size are shown.",
-    "enableSSL": "Enable SSL Proxying"
+    "enableSSL": "Enable SSL Proxying",
+    "tunnelReason": {
+      "not_allowlisted": "SSL Proxying is not enabled for {host}: only the host, timing and size are shown.",
+      "denylist": "{host} is on the Never decrypt list, so it is tunneled. Remove it there to decrypt it.",
+      "learned": "{host} rejected the ProxyPilot certificate (SSL pinning or a client certificate), so it is tunneled for this run. Decrypt list → Try again.",
+      "no_ca": "{host} is tunneled: the proxy runs without a certificate authority."
+    }
   },
   "traffic": {
     "rateHint": "Live throughput through the proxy (download / upload)",

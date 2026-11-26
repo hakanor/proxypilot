@@ -34,6 +34,17 @@ func loadSSLPolicy(dir string) (p proxy.PolicySnapshot, ok bool) {
 	return p, true // an old file's "mode" is ignored: only allowlisted hosts are decrypted
 }
 
+// legacyMode is the "mode" an ssl-policy.json from 0.1.11 or older still carries ("" when none).
+func legacyMode(dir string) string {
+	var old struct {
+		Mode string `json:"mode"`
+	}
+	if b, err := os.ReadFile(filepath.Join(dir, sslPolicyFile)); err == nil {
+		_ = json.Unmarshal(b, &old)
+	}
+	return old.Mode
+}
+
 // refreshFavoriteHosts keeps the popular+pinned hosts (include_favorites) current.
 func (d *Daemon) refreshFavoriteHosts(ctx context.Context, every time.Duration) {
 	for {

@@ -280,6 +280,9 @@ func TestDenylistTunnels(t *testing.T) {
 	if !f.Tunneled {
 		t.Fatal("expected a tunneled flow")
 	}
+	if got := f.Tags()["tunnel_reason"]; got != TunnelDenylist {
+		t.Fatalf("tunnel_reason = %q", got)
+	}
 	if f.BytesUp == 0 || f.BytesDown == 0 {
 		t.Fatalf("tunnel bytes not counted: up=%d down=%d", f.BytesUp, f.BytesDown)
 	}

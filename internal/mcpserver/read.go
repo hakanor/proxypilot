@@ -19,7 +19,7 @@ import (
 )
 
 // rowFormat names the fields of a list line, once per page.
-const rowFormat = "id method status ms size type time url [×N repeats] [state= err= client= rules= gql=]"
+const rowFormat = "id method status ms size type time url [×N repeats] [state= why= err= client= rules= gql=]"
 
 // line renders a flow as one compact text line: about 60% fewer tokens than a JSON object.
 func (s *Server) line(f *store.Flow) string {
@@ -40,6 +40,9 @@ func (s *Server) line(f *store.Flow) string {
 		f.CreatedAt.Format(time.TimeOnly), clip(f.URL, 180))
 	if f.State != store.StateCompleted {
 		b.WriteString(" state=" + f.State)
+	}
+	if r := f.Tags["tunnel_reason"]; r != "" {
+		b.WriteString(" why=" + r) // not_allowlisted: the user enables SSL Proxying for the host
 	}
 	if f.ErrorKind != "" {
 		b.WriteString(" err=" + f.ErrorKind)
@@ -149,7 +152,11 @@ func (s *Server) registerRead() {
 		}
 		// Only allowlisted hosts are decrypted; the rest are tunneled and show no headers or bodies.
 		if p, err := k.c.SSLPolicy(ctx); err == nil {
-			out["decrypt"] = map[string]any{"allowlist": p.Allowlist, "also_popular_and_pinned": p.Favorites, "never_decrypted": p.Denylist}
+			d := map[string]any{"allowlist": p.Allowlist, "also_popular_and_pinned": p.Favorites, "never_decrypted": p.Denylist}
+			if len(p.Allowlist) == 0 && !p.Favorites {
+				d["note"] = "Nothing is decrypted: every HTTPS host is tunneled (state=tunneled why=not_allowlisted) until the user enables SSL Proxying for it (right-click a request → Enable SSL Proxying, or the Decrypt list)."
+			}
+			out["decrypt"] = d
 		}
 		return out, nil
 	})

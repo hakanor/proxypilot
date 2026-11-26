@@ -77,18 +77,31 @@ func (p *SSLPolicy) Snapshot() PolicySnapshot {
 	return PolicySnapshot{Allowlist: append([]string{}, p.allow...), Denylist: append([]string{}, p.deny...), Learned: l, Favorites: p.favorites, FavoriteHosts: fav}
 }
 
+// Why a CONNECT is tunneled instead of decrypted (stored as the flow's tunnel_reason tag).
+const (
+	TunnelNotAllowed = "not_allowlisted" // SSL Proxying is not enabled for the host
+	TunnelDenylist   = "denylist"        // on the "never decrypt" list
+	TunnelLearned    = "learned"         // rejected the certificate repeatedly, or needs a client certificate
+)
+
 // ShouldIntercept takes "host:port" (or a bare host).
-func (p *SSLPolicy) ShouldIntercept(hostport string) bool {
+func (p *SSLPolicy) ShouldIntercept(hostport string) bool { return p.TunnelReason(hostport) == "" }
+
+// TunnelReason is "" when the host is decrypted, otherwise one of the Tunnel* reasons.
+func (p *SSLPolicy) TunnelReason(hostport string) string {
 	host, port := splitHostPortLower(hostport)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	if matchAny(p.deny, host, port) {
-		return false
+		return TunnelDenylist
 	}
 	if _, ok := p.learned[host]; ok {
-		return false
+		return TunnelLearned
 	}
-	return matchAny(p.allow, host, port) || p.favorites && p.auto[host]
+	if matchAny(p.allow, host, port) || p.favorites && p.auto[host] {
+		return ""
+	}
+	return TunnelNotAllowed
 }
 
 // LearnTunnel makes future CONNECTs to host bypass interception

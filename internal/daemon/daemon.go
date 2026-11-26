@@ -110,6 +110,14 @@ func Run(ctx context.Context, cfg config.Config, log *slog.Logger, opts RunOptio
 	} else {
 		d.Policy = proxy.NewSSLPolicy(cfg.SSL.Allowlist, cfg.SSL.Denylist)
 	}
+	// Upgraded from the decrypt modes: say once why HTTPS now shows as tunneled, then drop the old field.
+	if m := legacyMode(cfg.DataDir); m != "" || cfg.SSL.Mode != "" {
+		log.Warn("decrypt modes are gone: only hosts on the SSL Proxying list are decrypted, everything else is tunneled. Right-click a request → Enable SSL Proxying, or add hosts in the Decrypt list",
+			"old_mode", m+cfg.SSL.Mode, "allowlist", len(d.Policy.Snapshot().Allowlist))
+		if m != "" {
+			d.saveSSLPolicy(d.Policy.Snapshot())
+		}
+	}
 
 	if d.Store, err = store.Open(cfg.DataDir, store.Options{MaxEntries: cfg.Store.MaxEntries, MaxBytes: int64(cfg.Store.MaxDiskMB) << 20, InlineBodyLimit: int64(cfg.Store.InlineBodyLimit)}); err != nil {
 		return fmt.Errorf("store: %w", err)

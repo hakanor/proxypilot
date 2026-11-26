@@ -34,4 +34,11 @@ func TestSSLPolicySurvivesRestart(t *testing.T) {
 	if p, ok := loadSSLPolicy(d.Config.DataDir); !ok || len(p.Allowlist) != 1 {
 		t.Fatalf("old file: %+v ok=%v", p, ok)
 	}
+	if m := legacyMode(d.Config.DataDir); m != "all" {
+		t.Fatalf("legacy mode = %q", m)
+	}
+	d.saveSSLPolicy(proxy.PolicySnapshot{Allowlist: []string{"a.com"}})
+	if m := legacyMode(d.Config.DataDir); m != "" {
+		t.Fatalf("re-saved file still has mode %q", m)
+	}
 }

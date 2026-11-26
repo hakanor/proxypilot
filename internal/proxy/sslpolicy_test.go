@@ -55,3 +55,18 @@ func TestSSLPolicyFavorites(t *testing.T) {
 		}
 	}
 }
+
+func TestSSLPolicyTunnelReason(t *testing.T) {
+	p := NewSSLPolicy([]string{"*.example.com"}, []string{"pinned.example.com"})
+	p.LearnTunnel("mtls.example.com:443", "client certificate required")
+	for host, want := range map[string]string{
+		"api.example.com:443":    "",
+		"other.com:443":          TunnelNotAllowed,
+		"pinned.example.com:443": TunnelDenylist,
+		"mtls.example.com:443":   TunnelLearned,
+	} {
+		if got := p.TunnelReason(host); got != want {
+			t.Errorf("%s: got %q, want %q", host, got, want)
+		}
+	}
+}

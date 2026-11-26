@@ -35,9 +35,13 @@ func (s *Server) handleConnect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ProxyPilot: refusing to CONNECT to itself", http.StatusBadRequest)
 		return
 	}
-	intercept := s.opts.Issuer != nil && s.opts.Policy.ShouldIntercept(target)
-	if !intercept {
-		s.tunnel(w, r, target)
+	reason := "no_ca"
+	if s.opts.Issuer != nil {
+		reason = s.opts.Policy.TunnelReason(target)
+	}
+	if reason != "" {
+		s.log.Debug("tunneled, not decrypted", "host", target, "reason", reason)
+		s.tunnel(w, r, target, reason)
 		return
 	}
 
@@ -66,9 +70,10 @@ func hijack(w http.ResponseWriter) (net.Conn, *bufio.ReadWriter, error) {
 }
 
 // tunnel passes raw bytes in both directions and records one Flow with counts.
-func (s *Server) tunnel(w http.ResponseWriter, r *http.Request, target string) {
+func (s *Server) tunnel(w http.ResponseWriter, r *http.Request, target, reason string) {
 	f := newFlow(r.RemoteAddr, "https")
 	f.Host, f.Tunneled, f.Request = target, true, r
+	f.SetTag("tunnel_reason", reason)
 	hooks := s.hooks
 	if s.unrecorded(target) {
 		hooks = NopHooks{}
